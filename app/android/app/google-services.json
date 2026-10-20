@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "399185024983",
+    "project_id": "split-b66c0",
+    "storage_bucket": "split-b66c0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:399185024983:android:6f812edad7c003d50f1d92",
+        "android_client_info": {
+          "package_name": "dev.tade.split"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "399185024983-2bgluh7k0rrh3sm0atf3tinsbk1vgafg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZl7-05ZYy0LuAYkNAYXGRfip90Typ4IM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "399185024983-2bgluh7k0rrh3sm0atf3tinsbk1vgafg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

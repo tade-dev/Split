@@ -1,0 +1,151 @@
+{
+  "ok": true,
+  "perParticipant": {
+    "kemi": {
+      "itemsMinor": 2510,
+      "sharedFromOnUsMinor": 728,
+      "serviceMinor": 405,
+      "tipMinor": 0,
+      "discountMinor": 0,
+      "finalMinor": 3643,
+      "lines": [
+        {
+          "lineId": "prawn-crackers-0",
+          "minor": 110,
+          "portionLabel": "share"
+        },
+        {
+          "lineId": "pork-bao-1",
+          "minor": 600,
+          "portionLabel": "1 of 3"
+        },
+        {
+          "lineId": "chicken-katsu-2",
+          "minor": 1450,
+          "portionLabel": ""
+        },
+        {
+          "lineId": "lemonade-9",
+          "minor": 350,
+          "portionLabel": "1 of 2"
+        }
+      ]
+    },
+    "amaka": {
+      "itemsMinor": 2260,
+      "sharedFromOnUsMinor": 728,
+      "serviceMinor": 373,
+      "tipMinor": 0,
+      "discountMinor": 0,
+      "finalMinor": 3361,
+      "lines": [
+        {
+          "lineId": "prawn-crackers-0",
+          "minor": 110,
+          "portionLabel": "share"
+        },
+        {
+          "lineId": "tofu-rice-bowl-3",
+          "minor": 1200,
+          "portionLabel": ""
+        },
+        {
+          "lineId": "lychee-sour-7",
+          "minor": 950,
+          "portionLabel": "1 of 2"
+        }
+      ]
+    },
+    "josh": {
+      "itemsMinor": 3310,
+      "sharedFromOnUsMinor": 727,
+      "serviceMinor": 505,
+      "tipMinor": 0,
+      "discountMinor": 0,
+      "finalMinor": 4542,
+      "lines": [
+        {
+          "lineId": "prawn-crackers-0",
+          "minor": 110,
+          "portionLabel": "share"
+        },
+        {
+          "lineId": "pork-bao-1",
+          "minor": 600,
+          "portionLabel": "1 of 3"
+        },
+        {
+          "lineId": "beef-ramen-4",
+          "minor": 1500,
+          "portionLabel": ""
+        },
+        {
+          "lineId": "lager-8",
+          "minor": 1100,
+          "portionLabel": "2 of 3"
+        }
+      ]
+    },
+    "dan": {
+      "itemsMinor": 2760,
+      "sharedFromOnUsMinor": 727,
+      "serviceMinor": 436,
+      "tipMinor": 0,
+      "discountMinor": 0,
+      "finalMinor": 3923,
+      "lines": [
+        {
+          "lineId": "prawn-crackers-0",
+          "minor": 110,
+          "portionLabel": "share"
+        },
+        {
+          "lineId": "pork-bao-1",
+          "minor": 600,
+          "portionLabel": "1 of 3"
+        },
+        {
+          "lineId": "spicy-miso-ramen-5",
+          "minor": 1500,
+          "portionLabel": ""
+        },
+        {
+          "lineId": "lager-8",
+          "minor": 550,
+          "portionLabel": "1 of 3"
+        }
+      ]
+    },
+    "sam": {
+      "itemsMinor": 2910,
+      "sharedFromOnUsMinor": -2910,
+      "serviceMinor": 0,
+      "tipMinor": 0,
+      "discountMinor": 0,
+      "finalMinor": 0,
+      "lines": [
+        {
+          "lineId": "prawn-crackers-0",
+          "minor": 110,
+          "portionLabel": "share"
+        },
+        {
+          "lineId": "prawn-ramen-6",
+          "minor": 1500,
+          "portionLabel": ""
+        },
+        {
+          "lineId": "lychee-sour-7",
+          "minor": 950,
+          "portionLabel": "1 of 2"
+        },
+        {
+          "lineId": "lemonade-9",
+          "minor": 350,
+          "portionLabel": "1 of 2"
+        }
+      ]
+    }
+  },
+  "totalMinor": 15469
+}
