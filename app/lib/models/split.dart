@@ -79,10 +79,10 @@ abstract class Computed with _$Computed {
 
 /// organisers/{uid}/splits/{splitId}. Spec §2.
 @freezed
-abstract class Split with _$Split {
-  const Split._();
+abstract class SplitDoc with _$SplitDoc {
+  const SplitDoc._();
 
-  const factory Split({
+  const factory SplitDoc({
     required String id,
     @Default('Your bill') String title,
     String? merchant,
@@ -102,9 +102,9 @@ abstract class Split with _$Split {
     DateTime? createdAt,
     @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)
     DateTime? updatedAt,
-  }) = _Split;
+  }) = _SplitDoc;
 
-  factory Split.fromJson(Map<String, dynamic> json) => _$SplitFromJson(json);
+  factory SplitDoc.fromJson(Map<String, dynamic> json) => _$SplitDocFromJson(json);
 
   /// What stops the organiser going on. Derived by the API from the numbers.
   List<Ambiguity> get blocking => [for (final a in receiptAmbiguities) if (a.blocking) a];

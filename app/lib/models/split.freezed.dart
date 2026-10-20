@@ -1456,46 +1456,46 @@ as List<Ambiguity>,
 
 
 /// @nodoc
-mixin _$Split {
+mixin _$SplitDoc {
 
  String get id; String get title; String? get merchant;/// ISO date, e.g. 2026-10-02.
  String? get receiptDate;/// draft, claiming, collecting, settled or cancelled.
  String get status; Receipt get receipt; List<Ambiguity> get receiptAmbiguities; Map<String, List<Claim>> get claims; Rules get rules; String get organiserParticipantId; Computed? get computed;@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? get createdAt;@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? get updatedAt;
-/// Create a copy of Split
+/// Create a copy of SplitDoc
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$SplitCopyWith<Split> get copyWith => _$SplitCopyWithImpl<Split>(this as Split, _$identity);
+$SplitDocCopyWith<SplitDoc> get copyWith => _$SplitDocCopyWithImpl<SplitDoc>(this as SplitDoc, _$identity);
 
-  /// Serializes this Split to a JSON map.
+  /// Serializes this SplitDoc to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  final _this = this as Split;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Split&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.merchant, _this.merchant) || other.merchant == _this.merchant)&&(identical(other.receiptDate, _this.receiptDate) || other.receiptDate == _this.receiptDate)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.receipt, _this.receipt) || other.receipt == _this.receipt)&&const DeepCollectionEquality().equals(other.receiptAmbiguities, _this.receiptAmbiguities)&&const DeepCollectionEquality().equals(other.claims, _this.claims)&&(identical(other.rules, _this.rules) || other.rules == _this.rules)&&(identical(other.organiserParticipantId, _this.organiserParticipantId) || other.organiserParticipantId == _this.organiserParticipantId)&&(identical(other.computed, _this.computed) || other.computed == _this.computed)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
+  final _this = this as SplitDoc;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SplitDoc&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.merchant, _this.merchant) || other.merchant == _this.merchant)&&(identical(other.receiptDate, _this.receiptDate) || other.receiptDate == _this.receiptDate)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.receipt, _this.receipt) || other.receipt == _this.receipt)&&const DeepCollectionEquality().equals(other.receiptAmbiguities, _this.receiptAmbiguities)&&const DeepCollectionEquality().equals(other.claims, _this.claims)&&(identical(other.rules, _this.rules) || other.rules == _this.rules)&&(identical(other.organiserParticipantId, _this.organiserParticipantId) || other.organiserParticipantId == _this.organiserParticipantId)&&(identical(other.computed, _this.computed) || other.computed == _this.computed)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-  final _this = this as Split;
+  final _this = this as SplitDoc;
   return Object.hash(runtimeType,_this.id,_this.title,_this.merchant,_this.receiptDate,_this.status,_this.receipt,const DeepCollectionEquality().hash(_this.receiptAmbiguities),const DeepCollectionEquality().hash(_this.claims),_this.rules,_this.organiserParticipantId,_this.computed,_this.createdAt,_this.updatedAt);
 }
 
 @override
 String toString() {
-  final _this = this as Split;
-  return 'Split(id: ${_this.id}, title: ${_this.title}, merchant: ${_this.merchant}, receiptDate: ${_this.receiptDate}, status: ${_this.status}, receipt: ${_this.receipt}, receiptAmbiguities: ${_this.receiptAmbiguities}, claims: ${_this.claims}, rules: ${_this.rules}, organiserParticipantId: ${_this.organiserParticipantId}, computed: ${_this.computed}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
+  final _this = this as SplitDoc;
+  return 'SplitDoc(id: ${_this.id}, title: ${_this.title}, merchant: ${_this.merchant}, receiptDate: ${_this.receiptDate}, status: ${_this.status}, receipt: ${_this.receipt}, receiptAmbiguities: ${_this.receiptAmbiguities}, claims: ${_this.claims}, rules: ${_this.rules}, organiserParticipantId: ${_this.organiserParticipantId}, computed: ${_this.computed}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $SplitCopyWith<$Res>  {
-  factory $SplitCopyWith(Split value, $Res Function(Split) _then) = _$SplitCopyWithImpl;
+abstract mixin class $SplitDocCopyWith<$Res>  {
+  factory $SplitDocCopyWith(SplitDoc value, $Res Function(SplitDoc) _then) = _$SplitDocCopyWithImpl;
 @useResult
 $Res call({
  String id, String title, String? merchant, String? receiptDate, String status, Receipt receipt, List<Ambiguity> receiptAmbiguities, Map<String, List<Claim>> claims, Rules rules, String organiserParticipantId, Computed? computed,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? createdAt,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? updatedAt
@@ -1506,17 +1506,17 @@ $ReceiptCopyWith<$Res> get receipt;$RulesCopyWith<$Res> get rules;$ComputedCopyW
 
 }
 /// @nodoc
-class _$SplitCopyWithImpl<$Res>
-    implements $SplitCopyWith<$Res> {
-  _$SplitCopyWithImpl(this._self, this._then);
+class _$SplitDocCopyWithImpl<$Res>
+    implements $SplitDocCopyWith<$Res> {
+  _$SplitDocCopyWithImpl(this._self, this._then);
 
-  final Split _self;
-  final $Res Function(Split) _then;
+  final SplitDoc _self;
+  final $Res Function(SplitDoc) _then;
 
-/// Create a copy of Split
+/// Create a copy of SplitDoc
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? merchant = freezed,Object? receiptDate = freezed,Object? status = null,Object? receipt = null,Object? receiptAmbiguities = null,Object? claims = null,Object? rules = null,Object? organiserParticipantId = null,Object? computed = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
-  return _then(Split(
+  return _then(SplitDoc(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,merchant: freezed == merchant ? _self.merchant : merchant // ignore: cast_nullable_to_non_nullable
@@ -1533,7 +1533,7 @@ as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ig
 as DateTime?,
   ));
 }
-/// Create a copy of Split
+/// Create a copy of SplitDoc
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -1542,7 +1542,7 @@ $ReceiptCopyWith<$Res> get receipt {
   return $ReceiptCopyWith<$Res>(_self.receipt, (value) {
     return _then(_self.copyWith(receipt: value));
   });
-}/// Create a copy of Split
+}/// Create a copy of SplitDoc
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -1551,7 +1551,7 @@ $RulesCopyWith<$Res> get rules {
   return $RulesCopyWith<$Res>(_self.rules, (value) {
     return _then(_self.copyWith(rules: value));
   });
-}/// Create a copy of Split
+}/// Create a copy of SplitDoc
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -1567,8 +1567,8 @@ $ComputedCopyWith<$Res>? get computed {
 }
 
 
-/// Adds pattern-matching-related methods to [Split].
-extension SplitPatterns on Split {
+/// Adds pattern-matching-related methods to [SplitDoc].
+extension SplitDocPatterns on SplitDoc {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -1581,10 +1581,10 @@ extension SplitPatterns on Split {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _Split value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SplitDoc value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _Split() when $default != null:
+case _SplitDoc() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -1603,10 +1603,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _Split value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SplitDoc value)  $default,){
 final _that = this;
 switch (_that) {
-case _Split():
+case _SplitDoc():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -1624,10 +1624,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _Split value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SplitDoc value)?  $default,){
 final _that = this;
 switch (_that) {
-case _Split() when $default != null:
+case _SplitDoc() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -1647,7 +1647,7 @@ return $default(_that);case _:
 
 @optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String title,  String? merchant,  String? receiptDate,  String status,  Receipt receipt,  List<Ambiguity> receiptAmbiguities,  Map<String, List<Claim>> claims,  Rules rules,  String organiserParticipantId,  Computed? computed, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? createdAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _Split() when $default != null:
+case _SplitDoc() when $default != null:
 return $default(_that.id,_that.title,_that.merchant,_that.receiptDate,_that.status,_that.receipt,_that.receiptAmbiguities,_that.claims,_that.rules,_that.organiserParticipantId,_that.computed,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
@@ -1668,7 +1668,7 @@ return $default(_that.id,_that.title,_that.merchant,_that.receiptDate,_that.stat
 
 @optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String title,  String? merchant,  String? receiptDate,  String status,  Receipt receipt,  List<Ambiguity> receiptAmbiguities,  Map<String, List<Claim>> claims,  Rules rules,  String organiserParticipantId,  Computed? computed, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? createdAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
-case _Split():
+case _SplitDoc():
 return $default(_that.id,_that.title,_that.merchant,_that.receiptDate,_that.status,_that.receipt,_that.receiptAmbiguities,_that.claims,_that.rules,_that.organiserParticipantId,_that.computed,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
@@ -1688,7 +1688,7 @@ return $default(_that.id,_that.title,_that.merchant,_that.receiptDate,_that.stat
 
 @optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String title,  String? merchant,  String? receiptDate,  String status,  Receipt receipt,  List<Ambiguity> receiptAmbiguities,  Map<String, List<Claim>> claims,  Rules rules,  String organiserParticipantId,  Computed? computed, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? createdAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
-case _Split() when $default != null:
+case _SplitDoc() when $default != null:
 return $default(_that.id,_that.title,_that.merchant,_that.receiptDate,_that.status,_that.receipt,_that.receiptAmbiguities,_that.claims,_that.rules,_that.organiserParticipantId,_that.computed,_that.createdAt,_that.updatedAt);case _:
   return null;
 
@@ -1700,9 +1700,9 @@ return $default(_that.id,_that.title,_that.merchant,_that.receiptDate,_that.stat
 /// @nodoc
 @JsonSerializable()
 
-class _Split extends Split {
-  const _Split({required this.id, this.title = 'Your bill', this.merchant, this.receiptDate, this.status = 'draft', this.receipt = const Receipt(),  List<Ambiguity> receiptAmbiguities = const <Ambiguity>[],  Map<String, List<Claim>> claims = const <String, List<Claim>>{}, this.rules = const Rules(), this.organiserParticipantId = '', this.computed, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) this.createdAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) this.updatedAt}): _receiptAmbiguities = receiptAmbiguities,_claims = claims,super._();
-  factory _Split.fromJson(Map<String, dynamic> json) => _$SplitFromJson(json);
+class _SplitDoc extends SplitDoc {
+  const _SplitDoc({required this.id, this.title = 'Your bill', this.merchant, this.receiptDate, this.status = 'draft', this.receipt = const Receipt(),  List<Ambiguity> receiptAmbiguities = const <Ambiguity>[],  Map<String, List<Claim>> claims = const <String, List<Claim>>{}, this.rules = const Rules(), this.organiserParticipantId = '', this.computed, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) this.createdAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) this.updatedAt}): _receiptAmbiguities = receiptAmbiguities,_claims = claims,super._();
+  factory _SplitDoc.fromJson(Map<String, dynamic> json) => _$SplitDocFromJson(json);
 
 @override final  String id;
 @override@JsonKey() final  String title;
@@ -1732,20 +1732,20 @@ class _Split extends Split {
 @override@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) final  DateTime? createdAt;
 @override@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) final  DateTime? updatedAt;
 
-/// Create a copy of Split
+/// Create a copy of SplitDoc
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$SplitCopyWith<_Split> get copyWith => __$SplitCopyWithImpl<_Split>(this, _$identity);
+_$SplitDocCopyWith<_SplitDoc> get copyWith => __$SplitDocCopyWithImpl<_SplitDoc>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$SplitToJson(this, );
+  return _$SplitDocToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Split&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.merchant, merchant) || other.merchant == merchant)&&(identical(other.receiptDate, receiptDate) || other.receiptDate == receiptDate)&&(identical(other.status, status) || other.status == status)&&(identical(other.receipt, receipt) || other.receipt == receipt)&&const DeepCollectionEquality().equals(other.receiptAmbiguities, _receiptAmbiguities)&&const DeepCollectionEquality().equals(other.claims, _claims)&&(identical(other.rules, rules) || other.rules == rules)&&(identical(other.organiserParticipantId, organiserParticipantId) || other.organiserParticipantId == organiserParticipantId)&&(identical(other.computed, computed) || other.computed == computed)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SplitDoc&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.merchant, merchant) || other.merchant == merchant)&&(identical(other.receiptDate, receiptDate) || other.receiptDate == receiptDate)&&(identical(other.status, status) || other.status == status)&&(identical(other.receipt, receipt) || other.receipt == receipt)&&const DeepCollectionEquality().equals(other.receiptAmbiguities, _receiptAmbiguities)&&const DeepCollectionEquality().equals(other.claims, _claims)&&(identical(other.rules, rules) || other.rules == rules)&&(identical(other.organiserParticipantId, organiserParticipantId) || other.organiserParticipantId == organiserParticipantId)&&(identical(other.computed, computed) || other.computed == computed)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1756,15 +1756,15 @@ int get hashCode {
 
 @override
 String toString() {
-    return 'Split(id: $id, title: $title, merchant: $merchant, receiptDate: $receiptDate, status: $status, receipt: $receipt, receiptAmbiguities: $receiptAmbiguities, claims: $claims, rules: $rules, organiserParticipantId: $organiserParticipantId, computed: $computed, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'SplitDoc(id: $id, title: $title, merchant: $merchant, receiptDate: $receiptDate, status: $status, receipt: $receipt, receiptAmbiguities: $receiptAmbiguities, claims: $claims, rules: $rules, organiserParticipantId: $organiserParticipantId, computed: $computed, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$SplitCopyWith<$Res> implements $SplitCopyWith<$Res> {
-  factory _$SplitCopyWith(_Split value, $Res Function(_Split) _then) = __$SplitCopyWithImpl;
+abstract mixin class _$SplitDocCopyWith<$Res> implements $SplitDocCopyWith<$Res> {
+  factory _$SplitDocCopyWith(_SplitDoc value, $Res Function(_SplitDoc) _then) = __$SplitDocCopyWithImpl;
 @override @useResult
 $Res call({
  String id, String title, String? merchant, String? receiptDate, String status, Receipt receipt, List<Ambiguity> receiptAmbiguities, Map<String, List<Claim>> claims, Rules rules, String organiserParticipantId, Computed? computed,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? createdAt,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? updatedAt
@@ -1775,17 +1775,17 @@ $Res call({
 
 }
 /// @nodoc
-class __$SplitCopyWithImpl<$Res>
-    implements _$SplitCopyWith<$Res> {
-  __$SplitCopyWithImpl(this._self, this._then);
+class __$SplitDocCopyWithImpl<$Res>
+    implements _$SplitDocCopyWith<$Res> {
+  __$SplitDocCopyWithImpl(this._self, this._then);
 
-  final _Split _self;
-  final $Res Function(_Split) _then;
+  final _SplitDoc _self;
+  final $Res Function(_SplitDoc) _then;
 
-/// Create a copy of Split
+/// Create a copy of SplitDoc
 /// with the given fields replaced by the non-null parameter values.
 @override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? merchant = freezed,Object? receiptDate = freezed,Object? status = null,Object? receipt = null,Object? receiptAmbiguities = null,Object? claims = null,Object? rules = null,Object? organiserParticipantId = null,Object? computed = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
-  return _then(_Split(
+  return _then(_SplitDoc(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,merchant: freezed == merchant ? _self.merchant : merchant // ignore: cast_nullable_to_non_nullable
@@ -1803,7 +1803,7 @@ as DateTime?,
   ));
 }
 
-/// Create a copy of Split
+/// Create a copy of SplitDoc
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -1812,7 +1812,7 @@ $ReceiptCopyWith<$Res> get receipt {
   return $ReceiptCopyWith<$Res>(_self.receipt, (value) {
     return _then(_self.copyWith(receipt: value));
   });
-}/// Create a copy of Split
+}/// Create a copy of SplitDoc
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -1821,7 +1821,7 @@ $RulesCopyWith<$Res> get rules {
   return $RulesCopyWith<$Res>(_self.rules, (value) {
     return _then(_self.copyWith(rules: value));
   });
-}/// Create a copy of Split
+}/// Create a copy of SplitDoc
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')

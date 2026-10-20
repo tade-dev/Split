@@ -16,10 +16,10 @@ class _Stamp {
 }
 
 void main() {
-  group('Split', () {
+  group('SplitDoc', () {
     // Captured from POST /v1/splits/scan against the emulator: Lager was
     // misread as £15.60, so the bill does not add up.
-    final scanned = Split.fromJson(_fixture('scan-response.json')['split'] as Map<String, dynamic>);
+    final scanned = SplitDoc.fromJson(_fixture('scan-response.json')['split'] as Map<String, dynamic>);
 
     test('parses the scan response the API really sends', () {
       expect(scanned.status, 'draft');
@@ -41,7 +41,7 @@ void main() {
     });
 
     test('keeps an unread price and total as null, never 0', () {
-      final split = Split.fromJson({
+      final split = SplitDoc.fromJson({
         'id': 's1',
         'receipt': {
           'lines': [{'id': 'lager-0', 'name': 'Lager', 'qty': 3, 'lineTotalMinor': null}],
@@ -54,14 +54,14 @@ void main() {
 
     test('reads Firestore timestamps as well as ISO strings', () {
       final at = DateTime.utc(2026, 10, 2, 20, 41);
-      expect(Split.fromJson({'id': 's1', 'createdAt': _Stamp(at)}).createdAt, at);
-      expect(Split.fromJson({'id': 's1', 'createdAt': '2026-10-02T20:41:00.000Z'}).createdAt, at);
+      expect(SplitDoc.fromJson({'id': 's1', 'createdAt': _Stamp(at)}).createdAt, at);
+      expect(SplitDoc.fromJson({'id': 's1', 'createdAt': '2026-10-02T20:41:00.000Z'}).createdAt, at);
     });
 
     test('knows which statuses are still open', () {
-      expect(const Split(id: 'a').isOpen, isTrue);
-      expect(const Split(id: 'a', status: 'settled').isOpen, isFalse);
-      expect(const Split(id: 'a', status: 'cancelled').isOpen, isFalse);
+      expect(const SplitDoc(id: 'a').isOpen, isTrue);
+      expect(const SplitDoc(id: 'a', status: 'settled').isOpen, isFalse);
+      expect(const SplitDoc(id: 'a', status: 'cancelled').isOpen, isFalse);
     });
   });
 
