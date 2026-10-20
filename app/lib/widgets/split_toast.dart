@@ -134,9 +134,9 @@ class _ToastView extends StatelessWidget {
     final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
 
     final (icon, iconColor) = switch (data.kind) {
-      SplitToastKind.success => (SplitIcons.checkCircle, const Color(0xFF6FD49B)),
+      SplitToastKind.success => (SplitIcons.checkCircle, c.paidBar),
       SplitToastKind.error => (SplitIcons.alert, c.highlight),
-      SplitToastKind.info => (SplitIcons.info, const Color(0xFF9FD3FF)),
+      SplitToastKind.info => (SplitIcons.info, c.accentCyan),
     };
 
     Widget card = Material(
@@ -148,7 +148,7 @@ class _ToastView extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          boxShadow: const [BoxShadow(color: Color(0x33001C64), blurRadius: 24, offset: Offset(0, 10))],
+          boxShadow: [BoxShadow(color: c.ink.withValues(alpha: 0.2), blurRadius: 24, offset: const Offset(0, 10))],
         ),
         child: Row(
           children: [
