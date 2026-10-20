@@ -48,10 +48,14 @@ class Avatar extends StatelessWidget {
 /// Overlapping avatars, each ringed in the background colour so the edges
 /// read as separate people rather than one blob.
 class AvatarStack extends StatelessWidget {
-  const AvatarStack({super.key, required this.people, this.size = 30});
+  const AvatarStack({super.key, required this.people, this.size = 30, this.ring});
 
   final List<({String name, int colourIndex})> people;
   final double size;
+
+  /// The ring behind each avatar: whatever it sits on. Defaults to the page
+  /// background; on Home's dark card it is the card's own colour.
+  final Color? ring;
 
   static const _ring = 2.0;
   static const _overlap = 8.0;
@@ -59,7 +63,7 @@ class AvatarStack extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (people.isEmpty) return const SizedBox.shrink();
-    final ring = SplitColors.of(context).background;
+    final ring = this.ring ?? SplitColors.of(context).background;
     final outer = size + _ring * 2;
     final step = outer - _overlap;
     return SizedBox(
