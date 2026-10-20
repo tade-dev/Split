@@ -80,3 +80,51 @@ export function applyDelta(base: Minor, delta: number): Minor {
   }
   return result;
 }
+
+/**
+ * Splits `total` pence across parties in proportion to integer weights, so the
+ * parts always sum to exactly `total`.
+ *
+ * Each party gets the floor of total × w / Σw, worked in BigInt so no float
+ * ever touches money. The pennies left over go one each to the largest
+ * fractional remainders. Ties go to whoever comes first in `order`; Split
+ * passes the organiser first, then join order, so the person who paid the
+ * bill absorbs the rounding.
+ *
+ * A party with weight 0 gets 0 and never a leftover penny: the leftover count
+ * is always below the number of non-zero remainders.
+ */
+export function allocateLargestRemainder(
+  total: Minor,
+  weights: Readonly<Record<string, number>>,
+  order: readonly string[],
+): Record<string, Minor> {
+  assertMinor(total);
+  const ids = Object.keys(weights);
+  let sum = 0n;
+  for (const id of ids) {
+    const w = weights[id]!;
+    if (!Number.isSafeInteger(w) || w < 0) {
+      throw new MoneyError(`Weight for ${id} must be a non-negative integer, got ${w}`);
+    }
+    if (!order.includes(id)) throw new MoneyError(`${id} has a weight but no place in the tie-break order`);
+    sum += BigInt(w);
+  }
+  if (sum === 0n) throw new MoneyError('Cannot split an amount across weights that sum to zero');
+
+  const t = BigInt(total);
+  const out: Record<string, Minor> = {};
+  const remainders: { id: string; rem: bigint; rank: number }[] = [];
+  let given = 0n;
+  for (const id of ids) {
+    const scaled = t * BigInt(weights[id]!);
+    const share = scaled / sum;
+    out[id] = Number(share);
+    given += share;
+    remainders.push({ id, rem: scaled % sum, rank: order.indexOf(id) });
+  }
+
+  remainders.sort((a, b) => (a.rem === b.rem ? a.rank - b.rank : a.rem > b.rem ? -1 : 1));
+  for (let i = 0; i < Number(t - given); i++) out[remainders[i]!.id]! += 1;
+  return out;
+}
