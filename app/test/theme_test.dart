@@ -119,4 +119,51 @@ void main() {
     expect(SplitShape.selectableChipHeight, 40.0);
     expect(SplitShape.minTouchTarget, 44.0);
   });
+
+  group('participant colours', () {
+    // DESIGN.md gives 0-4; the plan's D12 chose 5-7 at the same lightness.
+    const expected = [
+      (0xFFFFC439, 0xFF3D2B00), (0xFFFF9F80, 0xFF4A1A0A), (0xFF9DBEFF, 0xFF0A2560),
+      (0xFF7AD9AE, 0xFF063D26), (0xFFD6B0FF, 0xFF3A1466), (0xFFFF9EC7, 0xFF4D0A2B),
+      (0xFF7FD3E6, 0xFF053A45), (0xFFB9D46C, 0xFF2E3A05),
+    ];
+
+    double contrast(Color a, Color b) {
+      final la = a.computeLuminance();
+      final lb = b.computeLuminance();
+      return (la > lb ? la + 0.05 : lb + 0.05) / (la > lb ? lb + 0.05 : la + 0.05);
+    }
+
+    test('match DESIGN.md and D12, in join order', () {
+      final p = SplitColors.light.participants;
+      expect(p, hasLength(8));
+      for (var i = 0; i < expected.length; i++) {
+        expect(p[i].fill, Color(expected[i].$1), reason: 'fill $i');
+        expect(p[i].text, Color(expected[i].$2), reason: 'text $i');
+      }
+    });
+
+    test('text is legible on its own fill', () {
+      for (final (i, pc) in SplitColors.light.participants.indexed) {
+        expect(contrast(pc.fill, pc.text), greaterThanOrEqualTo(4.5), reason: 'colour $i');
+      }
+    });
+
+    test('fills share one lightness band, so no one person shouts', () {
+      for (final (i, pc) in SplitColors.light.participants.indexed) {
+        expect(pc.fill.computeLuminance(), inInclusiveRange(0.45, 0.65), reason: 'colour $i');
+      }
+    });
+
+    test('a ninth person wraps round to the first colours', () {
+      expect(SplitColors.light.participant(9), SplitColors.light.participant(1));
+      expect(SplitColors.light.participant(8), SplitColors.light.participant(0));
+    });
+
+    test('lerp carries participant colours through', () {
+      final mid = SplitColors.light.lerp(SplitColors.light, 0.5);
+      expect(mid.participants, hasLength(8));
+      expect(mid.participant(3).fill, SplitColors.light.participant(3).fill);
+    });
+  });
 }

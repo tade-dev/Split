@@ -1,5 +1,21 @@
 import 'package:flutter/material.dart';
 
+/// A participant's colour: the fill that marks their avatar, receipt dots and
+/// claim cards, and the text that sits on it.
+@immutable
+class ParticipantColour {
+  const ParticipantColour(this.fill, this.text);
+  final Color fill;
+  final Color text;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ParticipantColour && other.fill == fill && other.text == text;
+
+  @override
+  int get hashCode => Object.hash(fill, text);
+}
+
 /// The design tokens from docs/design/DESIGN.md that Material's ColorScheme
 /// has no home for. Read via SplitColors.of(context); never hardcode a hex
 /// value in a widget.
@@ -27,6 +43,7 @@ class SplitColors extends ThemeExtension<SplitColors> {
     required this.onDarkMuted,
     required this.accentCyan,
     required this.paidBar,
+    required this.participants,
   });
 
   final Color background;
@@ -51,6 +68,15 @@ class SplitColors extends ThemeExtension<SplitColors> {
   final Color accentCyan;
   final Color paidBar;
 
+  /// Assigned in join order, the organiser first. A person's colour follows
+  /// their items everywhere, which is Split's signature. Never use colour
+  /// alone for meaning: avatars carry the initial, claim cards the name.
+  final List<ParticipantColour> participants;
+
+  /// The colour for a participant's `colourIndex`. Wraps past eight people.
+  ParticipantColour participant(int colourIndex) =>
+      participants[colourIndex % participants.length];
+
   static const light = SplitColors(
     background: Color(0xFFF5F7FA),
     surface: Color(0xFFFFFFFF),
@@ -73,6 +99,18 @@ class SplitColors extends ThemeExtension<SplitColors> {
     onDarkMuted: Color(0xFFB9C8EE),
     accentCyan: Color(0xFF60CDFF),
     paidBar: Color(0xFF5BD08F),
+    // 0-4 from DESIGN.md. 5-7 chosen at the same lightness (luminance 0.50,
+    // 0.57, 0.59 against 0-4's 0.48-0.61), each text at least 7:1 on its fill.
+    participants: [
+      ParticipantColour(Color(0xFFFFC439), Color(0xFF3D2B00)),
+      ParticipantColour(Color(0xFFFF9F80), Color(0xFF4A1A0A)),
+      ParticipantColour(Color(0xFF9DBEFF), Color(0xFF0A2560)),
+      ParticipantColour(Color(0xFF7AD9AE), Color(0xFF063D26)),
+      ParticipantColour(Color(0xFFD6B0FF), Color(0xFF3A1466)),
+      ParticipantColour(Color(0xFFFF9EC7), Color(0xFF4D0A2B)),
+      ParticipantColour(Color(0xFF7FD3E6), Color(0xFF053A45)),
+      ParticipantColour(Color(0xFFB9D46C), Color(0xFF2E3A05)),
+    ],
   );
 
   static SplitColors of(BuildContext context) =>
@@ -101,6 +139,7 @@ class SplitColors extends ThemeExtension<SplitColors> {
     Color? onDarkMuted,
     Color? accentCyan,
     Color? paidBar,
+    List<ParticipantColour>? participants,
   }) {
     return SplitColors(
       background: background ?? this.background,
@@ -124,6 +163,7 @@ class SplitColors extends ThemeExtension<SplitColors> {
       onDarkMuted: onDarkMuted ?? this.onDarkMuted,
       accentCyan: accentCyan ?? this.accentCyan,
       paidBar: paidBar ?? this.paidBar,
+      participants: participants ?? this.participants,
     );
   }
 
@@ -153,6 +193,13 @@ class SplitColors extends ThemeExtension<SplitColors> {
       onDarkMuted: c(onDarkMuted, other.onDarkMuted),
       accentCyan: c(accentCyan, other.accentCyan),
       paidBar: c(paidBar, other.paidBar),
+      participants: [
+        for (var i = 0; i < participants.length; i++)
+          ParticipantColour(
+            c(participants[i].fill, other.participant(i).fill),
+            c(participants[i].text, other.participant(i).text),
+          ),
+      ],
     );
   }
 }
