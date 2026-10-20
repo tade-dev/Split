@@ -15,8 +15,17 @@ Split builds on, is `tade-dev/sorted` `docs/verified-facts.md` at `902dc25`.
   `API_BASE_URL`.
 - PayPal credentials in Render come from a dedicated Split sandbox app
   (Merchant), not Sorted's. Its webhook points at `/v1/webhooks/paypal`.
-- Sweeps are not scheduled yet (plan Task 13). Web build on Firebase Hosting
-  is plan Task 21.
+- **Sweeps are scheduled from GitHub Actions (verified 2026-10-20).**
+  `.github/workflows/sweeps.yml` calls `reconcile` every 10 minutes and
+  `expire-sweep` and `nudge-sweep` hourly at :07, with the repo secret
+  `INTERNAL_TOKEN`. The first manual run
+  (https://github.com/tade-dev/Split/actions/runs/39466628528) returned 200
+  with zero counts from all three: `{"checked":0,"promoted":0,"failed":0}`,
+  `{"scanned":0,"expired":0,"kept":0,"failed":0}`,
+  `{"scanned":0,"nudged":0,"skipped":0}`. The first call took ~35s, which is
+  the free plan waking from sleep. The idle-wake check (Task 13 step 4) waits
+  for `starter`.
+- Web build on Firebase Hosting is plan Task 21.
 
 - **`api/render.yaml` is on `plan: free` (decided 2026-10-20)**, because
   `starter` asks for a payment method before the Blueprint will create. This
