@@ -4,5 +4,5 @@
 /// needs no flags.
 const apiBaseUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'https://split-api.onrender.com',
+  defaultValue: 'https://split-api-k5ai.onrender.com',
 );

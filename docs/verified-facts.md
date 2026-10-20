@@ -6,8 +6,17 @@ Split builds on, is `tade-dev/sorted` `docs/verified-facts.md` at `902dc25`.
 
 ## Deployment
 
-Nothing deployed yet. See plan Tasks 13 (Render `split-api`, sweeps
-scheduled) and 21 (web build on Firebase Hosting).
+- **Render `split-api` is live at `https://split-api-k5ai.onrender.com`
+  (verified 2026-10-20).** Created from the Blueprint on `main`. Render added
+  the `-k5ai` suffix because `split-api` was taken, so the plain
+  `split-api.onrender.com` is not ours. `GET /v1/health` returned `ok: true`,
+  `paypalEnv: sandbox`, `visionModel: gpt-5.5`, `firebaseProject: split-b66c0`.
+  It is now the code default for `PUBLIC_BASE_URL` and the app's
+  `API_BASE_URL`.
+- PayPal credentials in Render come from a dedicated Split sandbox app
+  (Merchant), not Sorted's. Its webhook points at `/v1/webhooks/paypal`.
+- Sweeps are not scheduled yet (plan Task 13). Web build on Firebase Hosting
+  is plan Task 21.
 
 - **`api/render.yaml` is on `plan: free` (decided 2026-10-20)**, because
   `starter` asks for a payment method before the Blueprint will create. This
@@ -53,8 +62,6 @@ verified 2026-10-04 for DM screenshots) until then.
 - That bootstrap works end to end against `split-b66c0`: it needs the API
   running with a service account (plan Task 13).
 
-- That `split-api.onrender.com` is the real Render URL. It is the default in
-  `api/src/env.ts`, `app/lib/core/env.dart` and `api/.env.example`.
 - Whether PayPal accepts `payee.email_address` set to a personal sandbox
   account. Fallback: the shared sandbox merchant, stated in the README.
 - Which model reads receipts reliably, and whether it reads "Lager x3 16.50"
