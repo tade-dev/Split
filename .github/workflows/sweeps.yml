@@ -1,0 +1,73 @@
+# Calls the API's scheduled sweeps (see the note at the end of api/render.yaml).
+# Needs the repo secret INTERNAL_TOKEN, the same value as on Render. The repo
+# variable API_BASE_URL overrides the default service URL.
+#
+# GitHub may start a scheduled run several minutes late, which is fine for all
+# three. On the free plan the first call after a sleep takes ~50s, hence the
+# long timeout.
+name: sweeps
+
+on:
+  schedule:
+    - cron: '*/10 * * * *' # reconcile
+    - cron: '7 * * * *'    # expire-sweep and nudge-sweep
+  workflow_dispatch:
+    inputs:
+      sweep:
+        description: Which sweep to run
+        type: choice
+        options: [all, reconcile, expire-sweep, nudge-sweep]
+        default: all
+
+concurrency:
+  group: sweeps-${{ github.event.schedule || github.event.inputs.sweep }}
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      API_BASE_URL: ${{ vars.API_BASE_URL || 'https://split-api-k5ai.onrender.com' }}
+      INTERNAL_TOKEN: ${{ secrets.INTERNAL_TOKEN }}
+      SCHEDULE: ${{ github.event.schedule }}
+      CHOSEN: ${{ github.event.inputs.sweep }}
+    steps:
+      - name: Pick sweeps
+        id: pick
+        run: |
+          case "$SCHEDULE" in
+            '*/10 * * * *') sweeps="reconcile" ;;
+            '7 * * * *')    sweeps="expire-sweep nudge-sweep" ;;
+            *)
+              if [ "$CHOSEN" = all ] || [ -z "$CHOSEN" ]; then
+                sweeps="reconcile expire-sweep nudge-sweep"
+              else
+                sweeps="$CHOSEN"
+              fi ;;
+          esac
+          echo "sweeps=$sweeps" >> "$GITHUB_OUTPUT"
+
+      - name: Run them
+        env:
+          SWEEPS: ${{ steps.pick.outputs.sweeps }}
+        run: |
+          if [ -z "$INTERNAL_TOKEN" ]; then
+            echo "::error::Repo secret INTERNAL_TOKEN is not set."
+            exit 1
+          fi
+          failed=0
+          for sweep in $SWEEPS; do
+            echo "::group::$sweep"
+            if curl -sS --fail-with-body --max-time 120 --retry 2 --retry-delay 10 --retry-all-errors \
+                -X POST "$API_BASE_URL/v1/internal/workflows/$sweep" \
+                -H "X-Internal-Token: $INTERNAL_TOKEN" \
+                -H 'Content-Type: application/json' -d '{}'; then
+              echo
+            else
+              echo "::error::$sweep failed"
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+          exit "$failed"
