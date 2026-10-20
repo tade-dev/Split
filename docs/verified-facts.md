@@ -6,8 +6,14 @@ Split builds on, is `tade-dev/sorted` `docs/verified-facts.md` at `902dc25`.
 
 ## Deployment
 
-Nothing deployed yet. See plan Tasks 13 (Render `split-api` on `starter`,
-sweeps scheduled) and 21 (web build on Firebase Hosting).
+Nothing deployed yet. See plan Tasks 13 (Render `split-api`, sweeps
+scheduled) and 21 (web build on Firebase Hosting).
+
+- **`api/render.yaml` is on `plan: free` (decided 2026-10-20)**, because
+  `starter` asks for a payment method before the Blueprint will create. This
+  departs from spec §4 / risk 6. Move to `starter` (or apply the hackathon's
+  Render credits) before PayPal payments go live in Week B: a sleeping
+  service drops webhooks and cannot run the sweeps.
 
 ## Firebase
 
