@@ -2,7 +2,9 @@
 
 > Snap the bill. Everyone pays their bit.
 
-**Live demo:** _(web build, after Firebase and Render are set up: plan Tasks 12, 13 and 21)_
+**Live demo:** https://split-b66c0.web.app
+
+**API health:** https://split-api-k5ai.onrender.com/v1/health
 
 After a group meal, the person who paid photographs the receipt. Split reads every line and service charge and checks they add up to the printed total. Friends say what they had in plain words from a link, with no app to install. Code, not the AI, works out each share to the penny, and each friend pays their share by PayPal straight to the organiser.
 

@@ -25,7 +25,15 @@ Split builds on, is `tade-dev/sorted` `docs/verified-facts.md` at `902dc25`.
   `{"scanned":0,"nudged":0,"skipped":0}`. The first call took ~35s, which is
   the free plan waking from sleep. The idle-wake check (Task 13 step 4) waits
   for `starter`.
-- Web build on Firebase Hosting is plan Task 21.
+- **Web build is live at `https://split-b66c0.web.app` (verified
+  2026-10-20).** Built with Flutter 3.47.2 and
+  `--dart-define=API_BASE_URL=https://split-api-k5ai.onrender.com`, then
+  deployed with `firebase deploy --only hosting --project split-b66c0`
+  (Hosting config in `firebase.json`). The smoke test from plan Task 21 passed
+  on a phone in a private window: Home with "Hi Kemi" and the Little Bao House
+  card, *Try a sample bill* through Reading to a Receipt at £154.69 with no
+  warning, the add-up warning appearing and clearing on a Lager edit, and Evenly
+  surviving a reload.
 
 - **`api/render.yaml` is on `plan: free` (decided 2026-10-20)**, because
   `starter` asks for a payment method before the Blueprint will create. This
