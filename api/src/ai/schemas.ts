@@ -11,6 +11,8 @@ export const ambiguitySchema = z.object({
     'unknown_product',
     'price_conflict',
     'qty_unclear',
+    /** Split: a receipt line, or part of one, that nobody has claimed. */
+    'unclaimed',
   ]),
   /** Seller-facing, answerable in one tap. Never model-speak. */
   question: z.string().min(1).max(160),
