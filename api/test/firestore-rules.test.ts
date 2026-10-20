@@ -73,4 +73,26 @@ describe('firestore rules', () => {
     const db = testEnv.authenticatedContext('organiser-a').firestore();
     await assertFails(setDoc(doc(db, 'webhookEvents/evt-1'), { handled: true }));
   });
+
+  it('lets an organiser read their own split and its participants', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'organisers/organiser-a/splits/s1'), { status: 'draft' });
+      await setDoc(doc(ctx.firestore(), 'organisers/organiser-a/splits/s1/participants/p1'), { name: 'Dan' });
+    });
+    const db = testEnv.authenticatedContext('organiser-a').firestore();
+    await assertSucceeds(getDoc(doc(db, 'organisers/organiser-a/splits/s1')));
+    await assertSucceeds(getDoc(doc(db, 'organisers/organiser-a/splits/s1/participants/p1')));
+  });
+
+  it("denies reading another organiser's split or participants", async () => {
+    const db = testEnv.authenticatedContext('organiser-b').firestore();
+    await assertFails(getDoc(doc(db, 'organisers/organiser-a/splits/s1')));
+    await assertFails(getDoc(doc(db, 'organisers/organiser-a/splits/s1/participants/p1')));
+  });
+
+  it('denies an organiser writing their own split, claims or a participant', async () => {
+    const db = testEnv.authenticatedContext('organiser-a').firestore();
+    await assertFails(setDoc(doc(db, 'organisers/organiser-a/splits/s2'), { status: 'settled' }));
+    await assertFails(setDoc(doc(db, 'organisers/organiser-a/splits/s1/participants/p1'), { status: 'paid' }));
+  });
 });
