@@ -2,10 +2,13 @@ services:
   - type: web
     name: split-api
     runtime: node
-    # Starter from day one (spec §4, §9 risk 6). The free tier sleeps after 15
-    # minutes, which drops PayPal webhooks and stops the reconcile and expiry
-    # sweeps, and gives judges a ~50s cold start.
-    plan: starter
+    # FREE FOR NOW. SWITCH TO `starter` BEFORE PAYPAL PAYMENTS GO LIVE (Week B).
+    # The spec asks for starter from day one (§4, §9 risk 6): the free tier
+    # sleeps after 15 minutes, which drops PayPal webhooks, stops the reconcile
+    # and expiry sweeps, and gives judges a ~50s cold start. Free is fine while
+    # nothing is paid through it; starter needs a payment method or the
+    # hackathon's Render credits.
+    plan: free
     region: frankfurt
     rootDir: api
     # --include=dev is required, not optional. NODE_ENV=production below makes
