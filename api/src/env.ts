@@ -3,7 +3,7 @@ import { z } from 'zod';
 const required = (name: string) => z.string().min(1, `${name} must not be empty`);
 
 /** Where PayPal sends the buyer after checkout, when PUBLIC_BASE_URL is unset. */
-export const DEFAULT_PUBLIC_BASE_URL = 'https://split-api.onrender.com';
+export const DEFAULT_PUBLIC_BASE_URL = 'https://split-api-k5ai.onrender.com';
 
 /** Seven days: the design spec's lifecycle table. */
 export const DEFAULT_ORDER_EXPIRY_HOURS = 168;
