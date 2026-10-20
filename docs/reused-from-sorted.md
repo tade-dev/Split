@@ -29,7 +29,7 @@ API 228 tests, Flutter 156 tests, `tsc --noEmit` and `flutter analyze` clean.
 
 | Split path | Sorted path | Action | What changed |
 |---|---|---|---|
-| `src/env.ts` | `src/env.ts` | Adapt | `DEFAULT_PUBLIC_BASE_URL` → `https://split-api.onrender.com` (unconfirmed until first deploy) |
+| `src/env.ts` | `src/env.ts` | Adapt | `DEFAULT_PUBLIC_BASE_URL` → `https://split-api-k5ai.onrender.com` (the URL Render assigned on first deploy) |
 | `src/firebase.ts` | `src/firebase.ts` | Adapt | None beyond renames |
 | `src/index.ts` | `src/index.ts` | Adapt | Log line |
 | `src/app.ts` | `src/app.ts` | Adapt | Catalogue, orders, session and summary routers removed; the invoice option to the PayPal pages removed |
@@ -101,7 +101,7 @@ id, Firebase config or iOS share extension came across.
 | `lib/features/split/share_status_pill.dart` | `lib/features/orders/status_pill.dart` | Adapt | `ShareStatusPill`. Morph and lightness rule unchanged |
 | `lib/features/split/share_presentation.dart` | `lib/features/orders/order_presentation.dart` | Adapt | Trimmed to `StatusTone` and `statusPresentation`. Labels are still Sorted's order statuses |
 | `lib/core/money.dart`, `firestore_time.dart`, `uk_date.dart`, `api_client.dart` | same | Copy | |
-| `lib/core/env.dart` | same | Copy | `API_BASE_URL` default → `https://split-api.onrender.com` |
+| `lib/core/env.dart` | same | Copy | `API_BASE_URL` default → `https://split-api-k5ai.onrender.com` |
 | `lib/features/scan/camera_port.dart` | `lib/features/catalogue/camera_port.dart` | Adapt | None beyond renames |
 | `lib/features/scan/scan_screen.dart` | `lib/features/catalogue/snap_screen.dart` | Adapt | Catalogue extraction replaced by a `scanReaderProvider` seam that returns the next route. Copy is still Sorted's ("Snap your stock", five photos) |
 | `lib/providers/organiser_provider.dart` | `lib/providers/seller_provider.dart` | Adapt | `organiserIdProvider` only (anonymous sign-in + bootstrap). The seller doc stream and updater were dropped with the `Seller` model |
