@@ -115,7 +115,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(_host());
-      for (var i = 0; i < 3; i++) {
+      // Two is the most a bill takes, so the strip is two deep at most.
+      for (var i = 0; i < 2; i++) {
         await _snap(tester);
         await tester.pumpAndSettle();
       }
@@ -123,8 +124,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 30));
 
-      expect(_thumbs, findsNWidgets(2));
-      for (var i = 0; i < 2; i++) {
+      expect(_thumbs, findsNWidgets(1));
+      for (var i = 0; i < 1; i++) {
         expect(
           _width(tester, _thumbs.at(i)),
           moreOrLessEquals(_rest, epsilon: 0.01),

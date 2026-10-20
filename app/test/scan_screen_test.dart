@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:split/core/theme/split_theme.dart';
 import 'package:split/features/scan/camera_port.dart';
 import 'package:split/features/scan/scan_screen.dart';
@@ -85,21 +86,57 @@ void main() {
     await _letThumbsLand(tester);
   });
 
-  testWidgets('refuses a sixth photo, matching the API limit', (tester) async {
+  testWidgets('refuses a third photo, matching the API limit', (tester) async {
     final picker = _FakePicker(
-      List.generate(6, (i) => (bytes: [i], filename: '$i.png')),
+      List.generate(3, (i) => (bytes: [i], filename: '$i.png')),
     );
     await tester.pumpWidget(_host(picker));
     await tester.tap(find.byKey(const Key('snap-shutter')));
     await tester.pump();
-    expect(find.text('5 photos'), findsOneWidget);
-    expect(find.textContaining('five photos'), findsOneWidget);
+    expect(find.text('2 photos'), findsOneWidget);
+    expect(find.text('Two photos covers even a long bill. Remove one to retake it.'), findsOneWidget);
     await _letThumbsLand(tester);
   });
 
-  testWidgets('shows the design hint copy', (tester) async {
+  testWidgets('shows the design copy', (tester) async {
     await tester.pumpWidget(_host(_FakePicker([])));
-    expect(find.textContaining('Keep price tags in shot'), findsOneWidget);
+    expect(find.text('Scan the bill'), findsOneWidget);
+    expect(find.text('Long bill? Snap it in two parts and Split joins them up.'), findsOneWidget);
+  });
+
+  testWidgets('says the bill is in frame only while the camera is live', (tester) async {
+    await tester.pumpWidget(_host(_FakePicker([])));
+    await tester.pump();
+    expect(find.text('Bill found, hold still'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(_host(_FakePicker([]), camera: _FakeCamera(CameraStatus.ready)));
+    await tester.pump();
+    expect(find.text('Bill found, hold still'), findsOneWidget);
+  });
+
+  testWidgets('Done hands the photos to the reader and goes where it says', (tester) async {
+    final read = <List<({List<int> bytes, String filename})>>[];
+    final router = GoRouter(routes: [
+      GoRoute(path: '/', builder: (_, _) => const ScanScreen()),
+      GoRoute(path: '/split/reading', builder: (_, _) => const Text('reading-route')),
+    ]);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        scanReaderProvider.overrideWithValue((photos) async {
+          read.add(photos);
+          return '/split/reading';
+        }),
+        imagePickerProvider.overrideWithValue(_FakePicker([(bytes: [7], filename: 'bill.png')])),
+        cameraPortProvider.overrideWithValue(_FakeCamera(CameraStatus.unavailable)),
+      ],
+      child: MaterialApp.router(theme: splitTheme(), routerConfig: router),
+    ));
+    await tester.tap(find.byKey(const Key('snap-upload')));
+    await tester.pump();
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+    expect(read.single.single.filename, 'bill.png');
+    expect(find.text('reading-route'), findsOneWidget);
   });
 
   testWidgets('says there is no camera and offers upload on a simulator', (tester) async {
@@ -131,19 +168,18 @@ void main() {
     await _letThumbsLand(tester);
   });
 
-  testWidgets('uploads several and removes one from the strip', (tester) async {
+  testWidgets('uploads both parts and removes one from the strip', (tester) async {
     final picker = _FakePicker([
       (bytes: [1], filename: 'a.png'),
       (bytes: [2], filename: 'b.png'),
-      (bytes: [3], filename: 'c.png'),
     ]);
     await tester.pumpWidget(_host(picker));
     await tester.tap(find.byKey(const Key('snap-upload')));
     await tester.pump();
-    expect(find.text('3 photos'), findsOneWidget);
+    expect(find.text('2 photos'), findsOneWidget);
     await tester.tap(find.byKey(const Key('remove-photo-1')));
     await tester.pump();
-    expect(find.text('2 photos'), findsOneWidget);
+    expect(find.text('1 photo'), findsOneWidget);
     await _letThumbsLand(tester);
   });
 

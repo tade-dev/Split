@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -10,6 +12,7 @@ import '../../core/api_client.dart';
 import '../../core/motion/split_motion.dart';
 import '../../core/theme/split_colors.dart';
 import '../../widgets/primary_button.dart';
+import '../../providers/splits_providers.dart';
 import 'camera_port.dart';
 
 /// Named so tests can inject photos without a camera.
@@ -39,19 +42,23 @@ class _PlatformPicker implements ImagePickerPort {
 
 final imagePickerProvider = Provider<ImagePickerPort>((ref) => _PlatformPicker());
 
-const _maxPhotos = 5;
+/// One photo, or two for a long bill. Matches the API's limit.
+const _maxPhotos = 2;
 
 typedef _Photo = ({List<int> bytes, String filename});
 
-/// Reads the snapped photos and returns where to go next. Sorted called its
-/// catalogue extraction here; Split's receipt read (`POST /v1/splits/scan`)
-/// replaces this default in the Week A plan.
+/// Reads the snapped photos and returns where to go next. The default starts
+/// the receipt read without waiting for it and hands over to Reading, which
+/// shows its progress. Tests replace it.
 typedef ScanReader = Future<String> Function(
   List<({List<int> bytes, String filename})> photos,
 );
 
 final scanReaderProvider = Provider<ScanReader>(
-  (ref) => (_) async => throw UnsupportedError('Reading a receipt is not built yet.'),
+  (ref) => (photos) async {
+    unawaited(ref.read(scanControllerProvider.notifier).read(photos));
+    return '/split/reading';
+  },
 );
 
 class ScanScreen extends ConsumerStatefulWidget {
@@ -106,7 +113,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
       final room = _maxPhotos - _photos.length;
       _photos.addAll(picked.take(room));
       _notice = picked.length > room
-          ? 'Split reads five photos at a time. Snap the rest after this batch.'
+          ? 'Two photos covers even a long bill. Remove one to retake it.'
           : null;
     });
   }
@@ -173,7 +180,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Snap your stock',
+                    'Scan the bill',
                     style: text.titleMedium?.copyWith(color: Colors.white),
                   ),
                 ],
@@ -204,7 +211,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
               child: Text(
                 _busy
                     ? 'Reading $count ${count == 1 ? 'photo' : 'photos'}…'
-                    : 'Snap one product or the whole table. Keep price tags in shot and Split reads them too.',
+                    : 'Long bill? Snap it in two parts and Split joins them up.',
                 key: const Key('snap-status'),
                 textAlign: TextAlign.center,
                 style: text.bodyMedium?.copyWith(color: c.onDarkMuted, height: 1.5),
@@ -287,6 +294,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
           child: KeyedSubtree(key: showing, child: main),
         ),
         const _Brackets(),
+        if (_status == CameraStatus.ready)
+          const Positioned(top: 26, left: 0, right: 0, child: Center(child: _InFrame())),
         if (count > 0)
           Positioned(
             left: 14,
@@ -320,6 +329,30 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
             child: _ThumbStrip(photos: _photos),
           ),
       ],
+    );
+  }
+}
+
+/// The pill over the frame in Scan.dc.html. Shown while the camera is live.
+class _InFrame extends StatelessWidget {
+  const _InFrame();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = SplitColors.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      decoration: BoxDecoration(
+        color: c.darkBg.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        'Bill found, hold still',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+      ),
     );
   }
 }
@@ -391,7 +424,7 @@ class _CameraMessage extends StatelessWidget {
               height: 120,
               decoration: BoxDecoration(color: c.darkTrack, shape: BoxShape.circle),
               alignment: Alignment.center,
-              child: SplitIcon(SplitIcons.camera, size: 44, color: const Color(0xFF9FD3FF)),
+              child: SplitIcon(SplitIcons.camera, size: 44, color: c.accentCyan),
             ),
             const SizedBox(height: 18),
             Text(
@@ -403,7 +436,7 @@ class _CameraMessage extends StatelessWidget {
             Text(
               denied
                   ? 'Turn on Camera for Split in Settings, or upload photos instead.'
-                  : 'Upload photos of your stock instead.',
+                  : 'Upload a photo of the bill instead.',
               textAlign: TextAlign.center,
               style: text.bodySmall?.copyWith(color: c.onDarkMuted),
             ),
@@ -584,7 +617,7 @@ class _GalleryButton extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   alignment: Alignment.center,
                   child: latest == null
-                      ? const SplitIcon(SplitIcons.gallery, color: Color(0xFF9FD3FF))
+                      ? SplitIcon(SplitIcons.gallery, color: c.accentCyan)
                       : Image.memory(
                           Uint8List.fromList(latest!),
                           width: 44,
@@ -592,7 +625,7 @@ class _GalleryButton extends StatelessWidget {
                           fit: BoxFit.cover,
                           gaplessPlayback: true,
                           errorBuilder: (_, _, _) =>
-                              const SplitIcon(SplitIcons.gallery, color: Color(0xFF9FD3FF)),
+                              SplitIcon(SplitIcons.gallery, color: c.accentCyan),
                         ),
                 ),
                 if (count > 0)
@@ -636,7 +669,7 @@ class _Shutter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const white = Color(0xFFF5F7FA);
+    final white = SplitColors.of(context).background;
     return Semantics(
       button: true,
       label: 'Take photo',
@@ -658,7 +691,7 @@ class _Shutter extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: white, width: 4),
             ),
-            child: const DecoratedBox(
+            child: DecoratedBox(
               decoration: BoxDecoration(color: white, shape: BoxShape.circle),
             ),
           ),
