@@ -46,8 +46,7 @@ services:
         sync: false
 # Scheduled calls. Each is a POST with header X-Internal-Token: $INTERNAL_TOKEN.
 # They are not services in this file, because a cron service is billed on its
-# own; point the scheduler you already use (a Render Workflow or cron job, or
-# any external cron) at them:
+# own. .github/workflows/sweeps.yml calls them on this schedule:
 #   every 10 min  /v1/internal/workflows/reconcile     paid status a webhook missed
 #   hourly        /v1/internal/workflows/expire-sweep  unpaid links past ORDER_EXPIRY_HOURS
 #   hourly        /v1/internal/workflows/nudge-sweep   drafts nudges that are due; sends nothing
