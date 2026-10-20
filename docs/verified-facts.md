@@ -11,8 +11,24 @@ sweeps scheduled) and 21 (web build on Firebase Hosting).
 
 ## Firebase
 
-No project yet. See plan Task 12. `app/lib/firebase_options.dart` is a
-placeholder that throws until `flutterfire configure` runs.
+- Project: **`split-b66c0`** (project number 399185024983), account
+  `tadedev22@gmail.com`. `.firebaserc` default points at it.
+- Apps registered by `flutterfire configure`, all bundle id **`dev.tade.split`**:
+  web `1:399185024983:web:c95fafc60cb96ed10f1d92`, Android
+  `…:android:6f812edad7c003d50f1d92`, iOS `…:ios:6264088da5844fd60f1d92`.
+  macOS, Windows and Linux are deliberately not configured.
+- **Verified 2026-10-20 against the live project**, with only the public web
+  config (Identity Toolkit and Firestore REST):
+  - Anonymous sign-in is enabled: `accounts:signUp` returned an ID token.
+  - Split's rules are deployed, not the console defaults. As that anonymous
+    user, reading its own `organisers/{uid}` returned **404** (allowed, the doc
+    does not exist yet; default production rules would return 403), reading
+    `organisers/someone-else` returned **403**, and writing its own doc
+    returned **403**.
+- Firestore location: not recorded here yet. Check it in the console under
+  Firestore → Databases.
+- The API's Admin SDK credentials (`FIREBASE_SERVICE_ACCOUNT_JSON`) are not
+  set up yet. That happens with Render, plan Task 13.
 
 ## PayPal
 
@@ -27,6 +43,9 @@ row per model here. `OPENAI_VISION_MODEL` stays `gpt-5.5` (Sorted's pin,
 verified 2026-10-04 for DM screenshots) until then.
 
 ## Still unverified
+
+- That bootstrap works end to end against `split-b66c0`: it needs the API
+  running with a service account (plan Task 13).
 
 - That `split-api.onrender.com` is the real Render URL. It is the default in
   `api/src/env.ts`, `app/lib/core/env.dart` and `api/.env.example`.
