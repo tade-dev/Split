@@ -103,7 +103,7 @@ Map<String, dynamic> _$ComputedToJson(_Computed instance) => <String, dynamic>{
   'problems': instance.problems.map((e) => e.toJson()).toList(),
 };
 
-_Split _$SplitFromJson(Map<String, dynamic> json) => _Split(
+_SplitDoc _$SplitDocFromJson(Map<String, dynamic> json) => _SplitDoc(
   id: json['id'] as String,
   title: json['title'] as String? ?? 'Your bill',
   merchant: json['merchant'] as String?,
@@ -138,7 +138,7 @@ _Split _$SplitFromJson(Map<String, dynamic> json) => _Split(
   updatedAt: dateTimeFromJson(json['updatedAt']),
 );
 
-Map<String, dynamic> _$SplitToJson(_Split instance) => <String, dynamic>{
+Map<String, dynamic> _$SplitDocToJson(_SplitDoc instance) => <String, dynamic>{
   'id': instance.id,
   'title': instance.title,
   'merchant': instance.merchant,

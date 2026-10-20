@@ -14,15 +14,15 @@ final splitsApiProvider = Provider<SplitsApi>(
 final splitsRepositoryProvider = Provider<SplitsRepository>((ref) => SplitsRepository());
 
 /// The organiser's splits, newest first, live.
-final splitsProvider = StreamProvider<List<Split>>((ref) {
+final splitsProvider = StreamProvider<List<SplitDoc>>((ref) {
   final organiserId = ref.watch(organiserIdProvider).value;
-  if (organiserId == null) return const Stream<List<Split>>.empty();
+  if (organiserId == null) return const Stream<List<SplitDoc>>.empty();
   return ref.watch(splitsRepositoryProvider).watchSplits(organiserId);
 });
 
-final splitProvider = StreamProvider.family<Split?, String>((ref, splitId) {
+final splitProvider = StreamProvider.family<SplitDoc?, String>((ref, splitId) {
   final organiserId = ref.watch(organiserIdProvider).value;
-  if (organiserId == null) return const Stream<Split?>.empty();
+  if (organiserId == null) return const Stream<SplitDoc?>.empty();
   return ref.watch(splitsRepositoryProvider).watchSplit(organiserId, splitId);
 });
 
@@ -48,7 +48,7 @@ class ScanReading extends ScanState {
 
 class ScanReady extends ScanState {
   const ScanReady(this.split);
-  final Split split;
+  final SplitDoc split;
 }
 
 class ScanFailed extends ScanState {

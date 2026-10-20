@@ -66,6 +66,14 @@ abstract final class SplitDurations {
   /// Reading screen. Much slower than [stagger], which is a list settling.
   static const beat = Duration(milliseconds: 150);
 
+  /// How long each step on the Reading screen waits before ticking. The read
+  /// is one request, so the steps pace the wait rather than report progress.
+  static const readingStep = Duration(milliseconds: 900);
+
+  /// How long Reading holds what it really found before opening the receipt:
+  /// long enough to read "Found 10 items", short enough not to stall.
+  static const readingHold = Duration(milliseconds: 700);
+
   /// One pass of the Reading screen's scan line. Long on purpose: it loops
   /// while a model is working, so it has to read as patient rather than busy.
   static const sweep = Duration(milliseconds: 1600);
