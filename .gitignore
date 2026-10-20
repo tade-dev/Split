@@ -1,0 +1,29 @@
+# Node
+node_modules/
+dist/
+*.log
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+**/serviceAccountKey.json
+**/firebase-adminsdk-*.json
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Agent scratch (not part of the project)
+.superpowers/
+.gstack/
+
+# OS / editor
+.DS_Store
+.idea/
+
+# Local npm cache (workaround: ~/.npm has root-owned entries)
+.npm-cache/
+.npmrc

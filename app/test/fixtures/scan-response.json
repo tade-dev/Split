@@ -1,0 +1,221 @@
+{
+  "split": {
+    "id": "Ka5L9Ac9kdDuGrBTxTRj",
+    "title": "Friday's bill",
+    "merchant": "Little Bao House",
+    "receiptDate": "2026-10-02",
+    "status": "draft",
+    "receipt": {
+      "lines": [
+        {
+          "id": "prawn-crackers-0",
+          "name": "Prawn crackers",
+          "qty": 1,
+          "lineTotalMinor": 550
+        },
+        {
+          "id": "pork-bao-1",
+          "name": "Pork bao",
+          "qty": 3,
+          "lineTotalMinor": 1800
+        },
+        {
+          "id": "chicken-katsu-2",
+          "name": "Chicken katsu",
+          "qty": 1,
+          "lineTotalMinor": 1450
+        },
+        {
+          "id": "tofu-rice-bowl-3",
+          "name": "Tofu rice bowl",
+          "qty": 1,
+          "lineTotalMinor": 1200
+        },
+        {
+          "id": "beef-ramen-4",
+          "name": "Beef ramen",
+          "qty": 1,
+          "lineTotalMinor": 1500
+        },
+        {
+          "id": "spicy-miso-ramen-5",
+          "name": "Spicy miso ramen",
+          "qty": 1,
+          "lineTotalMinor": 1500
+        },
+        {
+          "id": "prawn-ramen-6",
+          "name": "Prawn ramen",
+          "qty": 1,
+          "lineTotalMinor": 1500
+        },
+        {
+          "id": "lychee-sour-7",
+          "name": "Lychee sour",
+          "qty": 2,
+          "lineTotalMinor": 1900
+        },
+        {
+          "id": "lager-8",
+          "name": "Lager",
+          "qty": 3,
+          "lineTotalMinor": 1560
+        },
+        {
+          "id": "lemonade-9",
+          "name": "Lemonade",
+          "qty": 2,
+          "lineTotalMinor": 700
+        }
+      ],
+      "serviceChargeMinor": 1719,
+      "serviceChargeLabel": "12.5% discretionary",
+      "tipMinor": 0,
+      "discounts": [],
+      "printedTotalMinor": 15469,
+      "currency": "GBP"
+    },
+    "claims": {},
+    "rules": {
+      "serviceMode": "proportional",
+      "onUs": [],
+      "onUsPaidBy": null,
+      "serviceOptOut": []
+    },
+    "receiptAmbiguities": [
+      {
+        "field": "printedTotalMinor",
+        "kind": "price_conflict",
+        "question": "Items add up to £153.79 but the bill says £154.69. Check the photo or edit a line.",
+        "options": [],
+        "blocking": true
+      },
+      {
+        "field": "lines.lager-8.qty",
+        "kind": "qty_unclear",
+        "question": "Is that 3 lagers?",
+        "options": [
+          "3",
+          "2"
+        ],
+        "blocking": false
+      }
+    ],
+    "organiserParticipantId": "XBm1DcyfBNrdqJ5g3tQw",
+    "computed": {
+      "ok": false,
+      "problems": [
+        {
+          "field": "printedTotalMinor",
+          "kind": "price_conflict",
+          "question": "Items add up to £153.79 but the bill says £154.69. Check the photo or edit a line.",
+          "options": [],
+          "blocking": true
+        },
+        {
+          "field": "claims.prawn-crackers-0",
+          "kind": "unclaimed",
+          "question": "Nobody claimed the prawn crackers",
+          "options": [
+            "Share between all 1",
+            "Ask the group"
+          ],
+          "blocking": true
+        },
+        {
+          "field": "claims.pork-bao-1",
+          "kind": "unclaimed",
+          "question": "Nobody claimed the pork bao",
+          "options": [
+            "Share between all 1",
+            "Ask the group"
+          ],
+          "blocking": true
+        },
+        {
+          "field": "claims.chicken-katsu-2",
+          "kind": "unclaimed",
+          "question": "Nobody claimed the chicken katsu",
+          "options": [
+            "Share between all 1",
+            "Ask the group"
+          ],
+          "blocking": true
+        },
+        {
+          "field": "claims.tofu-rice-bowl-3",
+          "kind": "unclaimed",
+          "question": "Nobody claimed the tofu rice bowl",
+          "options": [
+            "Share between all 1",
+            "Ask the group"
+          ],
+          "blocking": true
+        },
+        {
+          "field": "claims.beef-ramen-4",
+          "kind": "unclaimed",
+          "question": "Nobody claimed the beef ramen",
+          "options": [
+            "Share between all 1",
+            "Ask the group"
+          ],
+          "blocking": true
+        },
+        {
+          "field": "claims.spicy-miso-ramen-5",
+          "kind": "unclaimed",
+          "question": "Nobody claimed the spicy miso ramen",
+          "options": [
+            "Share between all 1",
+            "Ask the group"
+          ],
+          "blocking": true
+        },
+        {
+          "field": "claims.prawn-ramen-6",
+          "kind": "unclaimed",
+          "question": "Nobody claimed the prawn ramen",
+          "options": [
+            "Share between all 1",
+            "Ask the group"
+          ],
+          "blocking": true
+        },
+        {
+          "field": "claims.lychee-sour-7",
+          "kind": "unclaimed",
+          "question": "Nobody claimed the lychee sour",
+          "options": [
+            "Share between all 1",
+            "Ask the group"
+          ],
+          "blocking": true
+        },
+        {
+          "field": "claims.lager-8",
+          "kind": "unclaimed",
+          "question": "Nobody claimed the lager",
+          "options": [
+            "Share between all 1",
+            "Ask the group"
+          ],
+          "blocking": true
+        },
+        {
+          "field": "claims.lemonade-9",
+          "kind": "unclaimed",
+          "question": "Nobody claimed the lemonade",
+          "options": [
+            "Share between all 1",
+            "Ask the group"
+          ],
+          "blocking": true
+        }
+      ]
+    },
+    "lockedAt": null,
+    "extractionModel": "gpt-5.5",
+    "sourceRef": null
+  }
+}

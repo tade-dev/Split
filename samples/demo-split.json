@@ -1,0 +1,25 @@
+{
+  "organiser": { "displayName": "Kemi" },
+  "title": "Friday dinner",
+  "merchant": "Little Bao House",
+  "receiptDate": "2026-10-02",
+  "people": ["Kemi", "Amaka", "Josh", "Dan", "Sam"],
+  "lines": [
+    { "name": "Prawn crackers", "qty": 1, "lineTotalMinor": 550, "claims": { "Kemi": 1, "Amaka": 1, "Josh": 1, "Dan": 1, "Sam": 1 } },
+    { "name": "Pork bao", "qty": 3, "lineTotalMinor": 1800, "claims": { "Kemi": 1, "Josh": 1, "Dan": 1 } },
+    { "name": "Chicken katsu", "qty": 1, "lineTotalMinor": 1450, "claims": { "Kemi": 1 } },
+    { "name": "Tofu rice bowl", "qty": 1, "lineTotalMinor": 1200, "claims": { "Amaka": 1 } },
+    { "name": "Beef ramen", "qty": 1, "lineTotalMinor": 1500, "claims": { "Josh": 1 } },
+    { "name": "Spicy miso ramen", "qty": 1, "lineTotalMinor": 1500, "claims": { "Dan": 1 } },
+    { "name": "Prawn ramen", "qty": 1, "lineTotalMinor": 1500, "claims": { "Sam": 1 } },
+    { "name": "Lychee sour", "qty": 2, "lineTotalMinor": 1900, "claims": { "Amaka": 1, "Sam": 1 } },
+    { "name": "Lager", "qty": 3, "lineTotalMinor": 1650, "claims": { "Josh": 2, "Dan": 1 } },
+    { "name": "Lemonade", "qty": 2, "lineTotalMinor": 700, "claims": { "Kemi": 1, "Sam": 1 } }
+  ],
+  "serviceChargeMinor": 1719,
+  "serviceChargeLabel": "12.5% discretionary",
+  "tipMinor": 0,
+  "discounts": [],
+  "printedTotalMinor": 15469,
+  "rules": { "serviceMode": "proportional", "onUs": ["Sam"], "onUsPaidBy": null, "serviceOptOut": [] }
+}
