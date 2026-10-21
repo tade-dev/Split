@@ -77,6 +77,13 @@ Split builds on, is `tade-dev/sorted` `docs/verified-facts.md` at `902dc25`.
   checkout showed the brand "Split", and `custom_id`
   (`org:split:participant`) round-tripped. No shared-merchant fallback is
   needed (plan decision E10).
+- **Webhooks arrive for a payee order (2026-10-21).** About nine deliveries
+  for the spike reached `POST /v1/webhooks/paypal`. At first every one failed
+  verification, because PayPal rejected Render's `PAYPAL_WEBHOOK_ID` with 400
+  "must match ^[a-zA-Z0-9]+$" and "size must be between 0 and 50": the wrong
+  value had been pasted in. Once the real 17-character ID was set, a resend of
+  `PAYMENT.CAPTURE.COMPLETED` (`WH-1C8720305V179940B-2Y2905661P2307307`) at
+  18:15:16 UTC left `/v1/health` at `webhookFailures: 0`.
 
 ## OpenAI
 
@@ -105,6 +112,3 @@ Split builds on, is `tade-dev/sorted` `docs/verified-facts.md` at `902dc25`.
   2026-10-20 (20:52, 21:31, 23:41, 00:31 UTC, all green), but roughly hourly,
   not every 10 minutes: GitHub throttles cron on quiet repos. Reconcile may
   need a tighter trigger once payments are live.
-- Whether any PayPal webhook arrives for a payee order. The spike captured
-  at about 18:05 UTC on 2026-10-21; Render's logs for
-  `POST /v1/webhooks/paypal` around then will say.
