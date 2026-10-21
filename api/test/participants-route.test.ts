@@ -142,7 +142,10 @@ describe('POST /v1/splits/:id/open', () => {
       `Dan: ${url('Dan')}`,
       `Sam: ${url('Sam')}`,
     ].join('\n'));
-    expect((await db.doc(`organisers/kemi/splits/${id}`).get()).get('status')).toBe('claiming');
+    const stored = await db.doc(`organisers/kemi/splits/${id}`).get();
+    expect(stored.get('status')).toBe('claiming');
+    // The Tracker reads these for Copy link and Preview.
+    expect(stored.get('links')).toEqual(Object.fromEntries(['Amaka', 'Josh', 'Dan', 'Sam'].map((name) => [people.find((p) => p.name === name)!.id, url(name)])));
   });
 
   it('gives the same links again once claiming', async () => {

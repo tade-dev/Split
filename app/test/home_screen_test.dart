@@ -74,6 +74,7 @@ Future<void> _pump(WidgetTester tester, List<SplitDoc> splits) async {
     GoRoute(path: '/scan', builder: (_, _) => const Text('scan-route')),
     GoRoute(path: '/split/reading', builder: (_, _) => const Text('reading-route')),
     GoRoute(path: '/split/:id/receipt', builder: (_, s) => Text('receipt ${s.pathParameters['id']}')),
+    GoRoute(path: '/split/:id', builder: (_, s) => Text('tracker ${s.pathParameters['id']}')),
   ]);
   await tester.binding.setSurfaceSize(const Size(390, 900));
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -83,6 +84,13 @@ Future<void> _pump(WidgetTester tester, List<SplitDoc> splits) async {
       splitsProvider.overrideWith((ref) => Stream.value(splits)),
       participantsProvider.overrideWith((ref, splitId) => Stream.value(switch (splitId) {
             'brunch' => [for (final n in ['Kemi', 'Tom', 'Priya', 'Ade']) Participant(id: n, name: n)],
+            'dinner' => const [
+                Participant(id: 'kemi', name: 'Kemi', isOrganiser: true, status: 'on_us', shareMinor: 3643),
+                Participant(id: 'amaka', name: 'Amaka', status: 'paid', shareMinor: 3361),
+                Participant(id: 'josh', name: 'Josh', status: 'paid', shareMinor: 4542),
+                Participant(id: 'dan', name: 'Dan', status: 'link_opened', shareMinor: 3923),
+                Participant(id: 'sam', name: 'Sam', status: 'on_us', shareMinor: 0),
+              ],
             _ => const [Participant(id: 'kemi', name: 'Kemi', isOrganiser: true)],
           })),
       splitsApiProvider.overrideWithValue(_api),
@@ -143,5 +151,14 @@ void main() {
     final data = await tester.runAsync(() => rootBundle.load(sampleBillAsset));
     final png = File('../samples/receipts/little-bao-house.png').readAsBytesSync();
     expect(data!.buffer.asUint8List(), png);
+  });
+
+  testWidgets('a collecting bill shows what has come back, and opens the tracker', (tester) async {
+    await _pump(tester, [_bao.copyWith(id: 'dinner', status: 'collecting')]);
+    expect(find.text('£79.03 of £118.26 back'), findsOneWidget);
+    expect(find.text('Waiting on Dan'), findsOneWidget);
+    await tester.tap(find.text('£79.03 of £118.26 back'));
+    await tester.pumpAndSettle();
+    expect(find.text('tracker dinner'), findsOneWidget);
   });
 }

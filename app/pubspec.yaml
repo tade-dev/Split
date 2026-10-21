@@ -49,6 +49,7 @@ dependencies:
   firebase_storage: ^13.6.0
   cached_network_image: ^4.0.4
   camera: ^0.12.1
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:
