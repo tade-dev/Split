@@ -1,7 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { allocate, type AllocateInput } from '../src/domain/allocate.js';
-import type { Claim, Rules } from '../src/domain/split.js';
+import type { LineClaims, Rules } from '../src/domain/split.js';
 
 /**
  * Random but valid splits: every line fully claimed, rules that leave someone
@@ -16,6 +16,7 @@ const validSplit: fc.Arbitrary<AllocateInput> = fc
       lineTotalMinor: fc.oneof(fc.constant(1), fc.integer({ min: 0, max: 20_000 })),
       claimants: fc.subarray(ids, { minLength: 1 }),
       weightSeed: fc.array(fc.integer({ min: 1, max: 7 }), { minLength: 8, maxLength: 8 }),
+      shared: fc.boolean(),
     });
     return fc.record({
       ids: fc.constant(ids),
@@ -32,14 +33,17 @@ const validSplit: fc.Arbitrary<AllocateInput> = fc
   })
   .map((g) => {
     const lines = g.lines.map((l, i) => ({ id: `line-${i}`, name: `Line ${i}`, qty: l.qty, lineTotalMinor: l.lineTotalMinor }));
-    const claims: Record<string, Claim[]> = {};
+    const claims: Record<string, LineClaims> = {};
     g.lines.forEach((l, i) => {
-      claims[`line-${i}`] = l.claimants.map((id, k) => ({
-        participantId: id,
-        // A lone claimant must cover every unit, or the line is partly unclaimed.
-        weight: l.claimants.length === 1 ? Math.max(l.qty, l.weightSeed[k]!) : l.weightSeed[k]!,
-        source: 'ai' as const,
-      }));
+      const weights = l.claimants.map((_, k) => l.weightSeed[k]!);
+      // Unless the line is shared, its weights must cover every unit, or it
+      // is partly unclaimed (spec Q1). The last claimant takes up the slack.
+      const short = l.qty - weights.reduce((t, w) => t + w, 0);
+      if (!l.shared && short > 0) weights[weights.length - 1]! += short;
+      claims[`line-${i}`] = {
+        claims: l.claimants.map((id, k) => ({ participantId: id, weight: weights[k]!, source: 'ai' as const })),
+        shared: l.shared,
+      };
     });
     const payers = g.ids.filter((id) => !g.onUs.includes(id));
     const paidBy = g.paidBySeed?.filter((id) => payers.includes(id)) ?? null;
@@ -114,10 +118,10 @@ describe('allocate: properties over random valid splits', () => {
   it('does not care what order claims on a line arrive in', () => {
     fc.assert(fc.property(validSplit, fc.integer(), (input, seed) => {
       const shuffled = structuredClone(input);
-      for (const [lineId, list] of Object.entries(shuffled.claims)) {
-        shuffled.claims[lineId] = [...list].sort((a, b) =>
+      for (const entry of Object.values(shuffled.claims)) {
+        entry.claims = [...entry.claims].sort((a, b) =>
           ((a.participantId.charCodeAt(1) * 31 + seed) % 97) - ((b.participantId.charCodeAt(1) * 31 + seed) % 97));
-        shuffled.claims[lineId]!.reverse();
+        entry.claims.reverse();
       }
       expect(ok(shuffled).perParticipant).toEqual(ok(input).perParticipant);
     }), { numRuns: 300 });

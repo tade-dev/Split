@@ -29,6 +29,13 @@ export type Claim = {
   source: 'ai' | 'organiser' | 'friend';
 };
 
+/**
+ * Everything claimed on one line. `shared` is set only by the organiser, from
+ * the "Share between …" option: it lets a line whose weights fall short of
+ * its quantity split by weight instead of asking the group (spec Q1).
+ */
+export type LineClaims = { claims: Claim[]; shared: boolean };
+
 export type Rules = {
   serviceMode: 'proportional' | 'even';
   onUs: string[];
@@ -44,7 +51,13 @@ export const DEFAULT_RULES: Rules = {
   serviceOptOut: [],
 };
 
-export type AllocParticipant = { id: string; joinOrder: number; isOrganiser: boolean };
+export type AllocParticipant = {
+  id: string;
+  joinOrder: number;
+  isOrganiser: boolean;
+  /** Only for the wording of problems. Falls back to the id. */
+  name?: string;
+};
 
 export type BreakdownLine = { lineId: string; minor: Minor; portionLabel: string };
 

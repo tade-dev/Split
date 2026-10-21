@@ -6,14 +6,14 @@ import type {
   Allocation,
   Breakdown,
   BreakdownLine,
-  Claim,
+  LineClaims,
   Receipt,
   Rules,
 } from './split.js';
 
 export type AllocateInput = {
   receipt: Receipt;
-  claims: Record<string, Claim[]>;
+  claims: Record<string, LineClaims>;
   rules: Rules;
   participants: AllocParticipant[];
 };
@@ -67,12 +67,13 @@ export function allocate(input: AllocateInput): Allocation {
   const { receipt, claims, rules, participants } = input;
   const order = tieOrder(participants);
   const known = new Set(order);
+  const nameOf = new Map(participants.map((p) => [p.id, p.name ?? p.id]));
   const problems: Ambiguity[] = [...receiptProblems(receipt)];
 
   // ── 1. Validate ─────────────────────────────────────────────────────────
   const lineIds = new Set(receipt.lines.map((l) => l.id));
   for (const lineId of Object.keys(claims)) {
-    if (!lineIds.has(lineId) && (claims[lineId]?.length ?? 0) > 0) {
+    if (!lineIds.has(lineId) && (claims[lineId]?.claims.length ?? 0) > 0) {
       problems.push(blocking(`claims.${lineId}`, 'unclear', 'A claim points at a line that is no longer on the bill.'));
     }
   }
@@ -82,7 +83,7 @@ export function allocate(input: AllocateInput): Allocation {
   const weightsByLine = new Map<string, Record<string, number>>();
   for (const line of receipt.lines) {
     const merged: Record<string, number> = {};
-    for (const claim of claims[line.id] ?? []) {
+    for (const claim of claims[line.id]?.claims ?? []) {
       if (!known.has(claim.participantId)) {
         problems.push(blocking(`claims.${line.id}`, 'unclear', `The ${line.name} is claimed by someone who is no longer in the group.`));
         continue;
@@ -103,12 +104,15 @@ export function allocate(input: AllocateInput): Allocation {
         options: [`Share between all ${participants.length}`, 'Ask the group'],
         blocking: true,
       });
-    } else if (claimants === 1 && units < line.qty) {
+    } else if (units < line.qty && !claims[line.id]?.shared) {
+      // Spec Q1: weights short of the quantity ask, however many claimed.
+      // "Lager ×3: Josh 1, Dan 1" is a missing lager until someone says so.
+      const names = Object.keys(merged).map((id) => nameOf.get(id) ?? id);
       problems.push({
         field: `claims.${line.id}`,
         kind: 'unclaimed',
         question: `${line.name}: ${line.qty - units} of ${line.qty} unclaimed`,
-        options: ['Ask the group'],
+        options: claimants >= 2 ? [`Share between ${listNames(names)}`, 'Ask the group'] : ['Ask the group'],
         blocking: true,
       });
     }
@@ -226,6 +230,11 @@ function portionLabel(weight: number, claimants: number, units: number, qty: num
   if (claimants === 1) return '';
   if (units === qty) return `${weight} of ${qty}`;
   return 'share';
+}
+
+/** "Josh and Dan", "Kemi, Josh and Dan". */
+function listNames(names: string[]): string {
+  return names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
 function blocking(field: string, kind: Ambiguity['kind'], question: string): Ambiguity {

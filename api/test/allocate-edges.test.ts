@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { allocate, type AllocateInput } from '../src/domain/allocate.js';
-import { DEFAULT_RULES, type Claim, type Rules } from '../src/domain/split.js';
+import { DEFAULT_RULES, type LineClaims, type Rules } from '../src/domain/split.js';
 
-type L = { name: string; qty: number; total: number; claims: Record<string, number> };
+type L = { name: string; qty: number; total: number; claims: Record<string, number>; shared?: boolean };
 
 function split(
   people: string[],
@@ -10,9 +10,12 @@ function split(
   opts: { service?: number; tip?: number; discount?: number; rules?: Partial<Rules> } = {},
 ): AllocateInput {
   const receiptLines = lines.map((l, i) => ({ id: `l${i}`, name: l.name, qty: l.qty, lineTotalMinor: l.total }));
-  const claims: Record<string, Claim[]> = {};
+  const claims: Record<string, LineClaims> = {};
   lines.forEach((l, i) => {
-    claims[`l${i}`] = Object.entries(l.claims).map(([participantId, weight]) => ({ participantId, weight, source: 'organiser' }));
+    claims[`l${i}`] = {
+      claims: Object.entries(l.claims).map(([participantId, weight]) => ({ participantId, weight, source: 'organiser' })),
+      shared: l.shared ?? false,
+    };
   });
   const items = lines.reduce((t, l) => t + l.total, 0);
   const service = opts.service ?? 0;
@@ -26,7 +29,7 @@ function split(
     },
     claims,
     rules: { ...DEFAULT_RULES, ...opts.rules },
-    participants: people.map((id, joinOrder) => ({ id, joinOrder, isOrganiser: joinOrder === 0 })),
+    participants: people.map((id, joinOrder) => ({ id, joinOrder, isOrganiser: joinOrder === 0, name: id[0]!.toUpperCase() + id.slice(1) })),
   };
 }
 
@@ -121,11 +124,26 @@ describe('allocate: problems instead of guesses', () => {
     expect(p).toMatchObject({ kind: 'unclaimed', question: 'Lager: 1 of 3 unclaimed' });
   });
 
-  it('treats two or more claimants as sharing, whatever the weights', () => {
-    // Spec §3 stage 1: two claimants make a shared item even when the
-    // weights are below qty. Split 1:1. See Review Focus 1.
-    expect(finals(split(['josh', 'dan'], [{ name: 'Lager', qty: 3, total: 1650, claims: { josh: 1, dan: 1 } }])))
+  it('asks the group when two claimants fall short of the quantity', () => {
+    // Spec Q1 (decided 2026-10-21): "Lager ×3: Josh 1, Dan 1" is a missing
+    // lager, not a 1:1 share, until the organiser says otherwise.
+    const [p] = problems(split(['josh', 'dan'], [{ name: 'Lager', qty: 3, total: 1650, claims: { josh: 1, dan: 1 } }]));
+    expect(p).toMatchObject({
+      field: 'claims.l0', kind: 'unclaimed', blocking: true,
+      question: 'Lager: 1 of 3 unclaimed',
+      options: ['Share between Josh and Dan', 'Ask the group'],
+    });
+  });
+
+  it('splits a short line by weight once the organiser marks it shared', () => {
+    expect(finals(split(['josh', 'dan'], [{ name: 'Lager', qty: 3, total: 1650, claims: { josh: 1, dan: 1 }, shared: true }])))
       .toEqual({ josh: 825, dan: 825 });
+  });
+
+  it('lets five people share one portion of prawn crackers', () => {
+    expect(finals(split(['kemi', 'amaka', 'josh', 'dan', 'sam'], [
+      { name: 'Prawn crackers', qty: 1, total: 550, claims: { kemi: 1, amaka: 1, josh: 1, dan: 1, sam: 1 } },
+    ]))).toEqual({ kemi: 110, amaka: 110, josh: 110, dan: 110, sam: 110 });
   });
 
   it('refuses a receipt that does not add up instead of allocating it', () => {
