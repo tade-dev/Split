@@ -33,15 +33,16 @@ export function receiptSumMinor(receipt: Receipt): number | null {
  */
 export function receiptProblems(receipt: Receipt): Ambiguity[] {
   const problems: Ambiguity[] = [];
+  // One copy for a bill the model found nothing on and a bill typed in from
+  // blank (spec Q2): either way the organiser is the one who adds the items.
   if (receipt.lines.length === 0) {
     problems.push({
       field: 'lines',
       kind: 'missing',
-      question: 'Split could not find any items on this bill. Add them by hand.',
+      question: 'Add the items on the bill.',
       options: [],
       blocking: true,
     });
-    return problems;
   }
   for (const line of receipt.lines) {
     if (line.lineTotalMinor === null) {
@@ -58,12 +59,13 @@ export function receiptProblems(receipt: Receipt): Ambiguity[] {
     problems.push({
       field: 'printedTotalMinor',
       kind: 'missing',
-      question: 'Split could not read the total. What does the bill say?',
+      question: "What's the total on the bill?",
       options: [],
       blocking: true,
     });
     return problems;
   }
+  if (receipt.lines.length === 0) return problems;
   const sum = receiptSumMinor(receipt);
   if (sum !== null && sum !== receipt.printedTotalMinor) {
     problems.push({

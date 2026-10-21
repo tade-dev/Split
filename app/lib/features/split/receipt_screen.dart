@@ -116,6 +116,7 @@ class _Body extends ConsumerWidget {
     final line = lineId == null ? null : split.receipt.lines.where((l) => l.id == lineId).firstOrNull;
     if (line != null) return () => _editLine(context, ref, line);
     if (a.field == 'printedTotalMinor' && a.kind == 'missing') return () => _editTotal(context, ref);
+    if (a.field == 'lines' && a.kind == 'missing') return () => _addLine(context, ref);
     return null;
   }
 
@@ -127,7 +128,7 @@ class _Body extends ConsumerWidget {
     final count = receipt.lines.length;
     final subtitle = [
       if (split.receiptDate != null) '${formatUkDate(split.receiptDate!)}.',
-      'Split read $count ${count == 1 ? 'item' : 'items'}.',
+      count == 0 ? 'Add each item on the bill.' : 'Split read $count ${count == 1 ? 'item' : 'items'}.',
     ].join(' ');
 
     return SafeArea(
@@ -154,7 +155,7 @@ class _Body extends ConsumerWidget {
                   _Note(question: a.question, onTap: _resolver(context, ref, a)),
                 ],
                 const SizedBox(height: 12),
-                _Lines(lines: receipt.lines, onTap: (l) => _editLine(context, ref, l)),
+                if (count > 0) _Lines(lines: receipt.lines, onTap: (l) => _editLine(context, ref, l)),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton(
@@ -178,17 +179,27 @@ class _Body extends ConsumerWidget {
                   ),
                 ],
                 const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Expanded(child: Text('Total paid by you', style: text.titleSmall)),
-                      receipt.printedTotalMinor == null
-                          ? Text('Not read yet', style: text.bodyMedium?.copyWith(color: c.warningText))
-                          : MoneyRoll(amountMinor: receipt.printedTotalMinor!, style: text.headlineMedium),
-                    ],
+                // Tappable whatever it says: a typed-in bill needs a total, and
+                // a misread one needs correcting (spec Q2).
+                InkWell(
+                  key: const Key('printed-total'),
+                  onTap: () => _editTotal(context, ref),
+                  borderRadius: BorderRadius.circular(SplitShape.cardRadius),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: SplitShape.minTouchTarget),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Expanded(child: Text('Total paid by you', style: text.titleSmall)),
+                          receipt.printedTotalMinor == null
+                              ? Text('Add the total', style: text.bodyMedium?.copyWith(color: c.warningText, fontWeight: FontWeight.w600))
+                              : MoneyRoll(amountMinor: receipt.printedTotalMinor!, style: text.headlineMedium),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ],

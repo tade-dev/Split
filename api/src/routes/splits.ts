@@ -63,6 +63,26 @@ export const receiptPatchSchema = z
   .strict()
   .refine((b) => Object.keys(b).length > 0, 'Send at least one change.');
 
+/** Spec Q2: a blank draft to type the bill into when the photo read fails. */
+export const newSplitSchema = z
+  .object({
+    title: z.string().trim().min(1).max(60),
+    merchant: z.string().trim().min(1).max(80).nullable(),
+    receiptDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+  })
+  .partial()
+  .strict();
+
+const EMPTY_RECEIPT: Receipt = {
+  lines: [],
+  serviceChargeMinor: 0,
+  serviceChargeLabel: null,
+  tipMinor: 0,
+  discounts: [],
+  printedTotalMinor: null,
+  currency: 'GBP',
+};
+
 export const rulesPatchSchema = z
   .object({
     serviceMode: z.enum(['proportional', 'even']),
@@ -138,6 +158,32 @@ export type SplitsDeps = { db: Firestore; verify: TokenVerifier; transport: Chat
 export function splitsRouter(deps: SplitsDeps): Router {
   const router = Router();
   const auth = requireOrganiser(deps.verify);
+
+  // Manual entry (plan Task 2). The same draft a scan makes, with nothing read.
+  router.post('/splits', auth, async (req, res, next) => {
+    const parsed = newSplitSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      next(new ApiError(400, 'VALIDATION_FAILED', 'That new split is not valid.', parsed.error.format()));
+      return;
+    }
+    try {
+      const organiser = await deps.db.doc(`organisers/${req.organiserId}`).get();
+      const name = organiser.get('displayName');
+      const split = await createSplit(deps.db, req.organiserId!, {
+        ...(parsed.data.title ? { title: parsed.data.title } : {}),
+        merchant: parsed.data.merchant ?? null,
+        receiptDate: parsed.data.receiptDate ?? null,
+        receipt: EMPTY_RECEIPT,
+        receiptAmbiguities: receiptProblems(EMPTY_RECEIPT),
+        extractionModel: 'manual',
+        sourceRef: null,
+        organiserName: typeof name === 'string' && name.trim() ? name.trim() : 'You',
+      });
+      res.status(201).json({ split: toApi(split) });
+    } catch (err) {
+      next(err);
+    }
+  });
 
   // Spec §4 endpoint 4. Synchronous, 3-10 s: the app shows Reading meanwhile.
   router.post('/splits/scan', auth, receiveImages, async (req, res, next) => {

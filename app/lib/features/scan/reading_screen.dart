@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/api_client.dart';
 import '../../core/money.dart';
 import '../../core/motion/split_motion.dart';
 import '../../core/theme/split_colors.dart';
@@ -14,6 +15,7 @@ import '../../providers/splits_providers.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/split_app_bar.dart';
 import '../../widgets/split_icon.dart';
+import '../../widgets/split_toast.dart';
 
 /// What the steps say while the one scan request is in flight. Honest about
 /// the order the backend works in, without claiming progress it cannot see.
@@ -53,6 +55,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   Timer? _ticker;
   Timer? _hold;
   int _shown = 0;
+  bool _creating = false;
 
   @override
   void initState() {
@@ -90,6 +93,22 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     context.canPop() ? context.pop() : context.go('/scan');
   }
 
+  /// Spec Q2: the read failed (the API has already retried the model), so
+  /// a blank receipt beats a dead end.
+  Future<void> _typeItIn() async {
+    setState(() => _creating = true);
+    try {
+      final split = await ref.read(splitsApiProvider).createEmpty();
+      if (!mounted) return;
+      ref.read(scanControllerProvider.notifier).reset();
+      context.pushReplacement('/split/${split.id}/receipt');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _creating = false);
+      SplitToast.error(context, describeApiError(e));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
@@ -111,7 +130,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                 const SizedBox(height: 8),
                 Text(state.message, style: text.bodyMedium, textAlign: TextAlign.center),
                 const SizedBox(height: 20),
-                PrimaryButton(label: 'Try again', onPressed: _tryAgain),
+                PrimaryButton(label: 'Type it in instead', onPressed: _creating ? null : _typeItIn),
+                const SizedBox(height: 8),
+                TextButton(onPressed: _creating ? null : _tryAgain, child: const Text('Try again')),
               ],
             ),
           ),

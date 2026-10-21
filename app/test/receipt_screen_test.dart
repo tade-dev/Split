@@ -35,6 +35,9 @@ class _RecordingApi implements SplitsApi {
   Future<SplitDoc> scan(List<Photo> photos) => throw UnimplementedError();
 
   @override
+  Future<SplitDoc> createEmpty() => throw UnimplementedError();
+
+  @override
   Future<SplitDoc> patchReceipt(String splitId, Map<String, Object?> body) async {
     receiptPatches.add(body);
     return _fixed;
@@ -185,6 +188,73 @@ void main() {
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
     expect(_api.receiptPatches.single, {'printedTotalMinor': 15469});
+  });
+
+  group('typed in from blank', () {
+    // What POST /v1/splits returns: no lines, no total, two questions.
+    final blank = _fixed.copyWith(
+      merchant: null,
+      receiptDate: null,
+      receipt: _fixed.receipt.copyWith(lines: const [], serviceChargeMinor: 0, printedTotalMinor: null),
+      receiptAmbiguities: const [
+        Ambiguity(field: 'lines', kind: 'missing', question: 'Add the items on the bill.'),
+        Ambiguity(field: 'printedTotalMinor', kind: 'missing', question: "What's the total on the bill?"),
+      ],
+    );
+
+    testWidgets('asks for the items and the total, and holds Add people', (tester) async {
+      await _pump(tester, blank);
+      expect(find.text('Add each item on the bill.'), findsOneWidget);
+      expect(find.text("What's the total on the bill?"), findsOneWidget);
+      expect(find.text('Add the total'), findsOneWidget);
+      expect(_addPeople(tester).enabled, isFalse);
+    });
+
+    testWidgets('adding two lines and a total clears the questions', (tester) async {
+      await _pump(tester, blank);
+      Future<void> addLine(String name, String qty, String price) async {
+        await tester.tap(find.text('Add a line'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byKey(const Key('line-name')), name);
+        await tester.enterText(find.byKey(const Key('line-qty')), qty);
+        await tester.enterText(find.byKey(const Key('line-price')), price);
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+      }
+
+      await addLine('Ramen', '1', '15.00');
+      await addLine('Lager', '2', '11.00');
+      await tester.tap(find.byKey(const Key('printed-total')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('total-price')), '26.00');
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(_api.receiptPatches, [
+        {'addLines': [{'name': 'Ramen', 'qty': 1, 'lineTotalMinor': 1500}]},
+        {'addLines': [{'name': 'Lager', 'qty': 2, 'lineTotalMinor': 1100}]},
+        {'printedTotalMinor': 2600},
+      ]);
+
+      _stream.add(blank.copyWith(
+        receipt: blank.receipt.copyWith(lines: [
+          _fixed.receipt.lines.first.copyWith(id: 'ramen-0', name: 'Ramen', qty: 1, lineTotalMinor: 1500),
+          _fixed.receipt.lines.first.copyWith(id: 'lager-1', name: 'Lager', qty: 2, lineTotalMinor: 1100),
+        ], printedTotalMinor: 2600),
+        receiptAmbiguities: const [],
+      ));
+      await tester.pumpAndSettle();
+      expect(find.text("What's the total on the bill?"), findsNothing);
+      expect(find.text('Add the items on the bill.'), findsNothing);
+      expect(find.text('£26.00'), findsOneWidget);
+      expect(_addPeople(tester).enabled, isTrue);
+    });
+
+    testWidgets('tapping the items question opens an empty line', (tester) async {
+      await _pump(tester, blank);
+      await tester.tap(find.text('Add the items on the bill.'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('line-name')), findsOneWidget);
+    });
   });
 
   testWidgets('Add people goes to People', (tester) async {
