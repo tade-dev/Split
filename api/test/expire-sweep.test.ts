@@ -16,7 +16,7 @@ const base = {
   NODE_ENV: 'test',
   PAYPAL_CLIENT_ID: 'x', PAYPAL_CLIENT_SECRET: 'x', PAYPAL_WEBHOOK_ID: 'x',
   OPENAI_API_KEY: 'x', OPENAI_VISION_MODEL: 'test-model',
-  FIREBASE_PROJECT_ID: 'split-expiry-test', INTERNAL_TOKEN: 'sweep-secret',
+  FIREBASE_PROJECT_ID: 'split-expiry-test', INTERNAL_TOKEN: 'sweep-secret', LINK_SECRET: 'link-secret',
 };
 
 let db: Firestore;

@@ -38,6 +38,9 @@ services:
         sync: false
       - key: INTERNAL_TOKEN
         sync: false
+      # Signs friend links. `openssl rand -hex 32`, never the same as INTERNAL_TOKEN.
+      - key: LINK_SECRET
+        sync: false
       # Buyer return and cancel pages. Unset uses the hosted Render URL in code.
       - key: PUBLIC_BASE_URL
         sync: false

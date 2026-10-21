@@ -18,6 +18,8 @@ const schema = z.object({
   OPENAI_VISION_MODEL: required('OPENAI_VISION_MODEL'),
   FIREBASE_PROJECT_ID: required('FIREBASE_PROJECT_ID'),
   INTERNAL_TOKEN: required('INTERNAL_TOKEN'),
+  /** Signs friend links. Never INTERNAL_TOKEN: a leak of one must not open the other. */
+  LINK_SECRET: required('LINK_SECRET'),
   /**
    * How long a checkout link stays open unpaid before the expiry sweep closes
    * it, counted from when the link was sent. Seven days, per the lifecycle
@@ -85,6 +87,12 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       `Environment is not configured — ${parts.join('; ')}. ` +
         'Every required variable in api/.env.example must be set to a non-empty value. ' +
         'Use a placeholder such as "pending" for ones you do not have yet.',
+    );
+  }
+  if (parsed.data.LINK_SECRET === parsed.data.INTERNAL_TOKEN) {
+    throw new Error(
+      'Environment is not configured — invalid: LINK_SECRET (must differ from INTERNAL_TOKEN). ' +
+        'Make a new one with `openssl rand -hex 32`.',
     );
   }
   const live = source.PAYPAL_ENV?.trim().toLowerCase() === 'live';

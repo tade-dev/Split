@@ -7,7 +7,7 @@ const env = loadEnv({
   NODE_ENV: 'test',
   PAYPAL_CLIENT_ID: 'x', PAYPAL_CLIENT_SECRET: 'x', PAYPAL_WEBHOOK_ID: 'x',
   OPENAI_API_KEY: 'x', OPENAI_VISION_MODEL: 'm',
-  FIREBASE_PROJECT_ID: 'p', INTERNAL_TOKEN: 't',
+  FIREBASE_PROJECT_ID: 'p', INTERNAL_TOKEN: 't', LINK_SECRET: 'link-secret',
 });
 const deps = {
   env,

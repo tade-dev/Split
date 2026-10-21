@@ -6,7 +6,9 @@ import 'package:split/features/home/home_screen.dart';
 import 'package:split/features/scan/camera_port.dart';
 import 'package:split/features/scan/reading_screen.dart';
 import 'package:split/features/scan/scan_screen.dart';
-import 'package:split/features/split/people_placeholder_screen.dart';
+import 'package:split/features/split/claims_placeholder_screen.dart';
+import 'package:split/features/split/people_screen.dart';
+import 'package:split/models/participant.dart';
 import 'package:split/features/split/receipt_screen.dart';
 import 'package:split/models/organiser.dart';
 import 'package:split/models/split.dart';
@@ -31,7 +33,8 @@ void main() {
     '/scan': ScanScreen,
     '/split/reading': ReadingScreen,
     '/split/s1/receipt': ReceiptScreen,
-    '/split/s1/people': PeoplePlaceholderScreen,
+    '/split/s1/people': PeopleScreen,
+    '/split/s1/claims': ClaimsPlaceholderScreen,
   };
 
   for (final MapEntry(key: path, value: screen) in routes.entries) {
@@ -41,6 +44,7 @@ void main() {
           organiserProvider.overrideWith((ref) => Stream.value(const Organiser(id: 'kemi', displayName: 'Kemi'))),
           splitsProvider.overrideWith((ref) => Stream.value(const <SplitDoc>[])),
           splitProvider.overrideWith((ref, id) => Stream.value(SplitDoc(id: id))),
+          participantsProvider.overrideWith((ref, id) => Stream.value(const <Participant>[])),
           cameraPortProvider.overrideWithValue(_NoCamera()),
           scanControllerProvider.overrideWith(_Reading.new),
         ],

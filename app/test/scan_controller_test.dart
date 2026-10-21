@@ -25,6 +25,15 @@ class _FakeApi implements SplitsApi {
   Future<SplitDoc> patchReceipt(String splitId, Map<String, Object?> body) => throw UnimplementedError();
 
   @override
+  Future<void> addPeople(String splitId, List<String> names) => throw UnimplementedError();
+
+  @override
+  Future<void> removePerson(String splitId, String participantId) => throw UnimplementedError();
+
+  @override
+  Future<OpenedSplit> open(String splitId) => throw UnimplementedError();
+
+  @override
   Future<SplitDoc> patchRules(String splitId, Map<String, Object?> body) => throw UnimplementedError();
 }
 

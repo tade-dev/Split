@@ -15,7 +15,7 @@ const env = loadEnv({
   NODE_ENV: 'test',
   PAYPAL_CLIENT_ID: 'x', PAYPAL_CLIENT_SECRET: 'x', PAYPAL_WEBHOOK_ID: 'wh-1',
   OPENAI_API_KEY: 'x', OPENAI_VISION_MODEL: 'test-model',
-  FIREBASE_PROJECT_ID: 'split-splits-test', INTERNAL_TOKEN: 'internal',
+  FIREBASE_PROJECT_ID: 'split-splits-test', INTERNAL_TOKEN: 'internal', LINK_SECRET: 'link-secret',
 });
 
 let db: Firestore;

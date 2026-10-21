@@ -29,7 +29,7 @@ describe.skipIf(!ready)('createPayPalOrder against the real sandbox', () => {
     NODE_ENV: 'test',
     PAYPAL_CLIENT_ID: id!, PAYPAL_CLIENT_SECRET: secret!, PAYPAL_WEBHOOK_ID: 'x',
     OPENAI_API_KEY: 'x', OPENAI_VISION_MODEL: 'm',
-    FIREBASE_PROJECT_ID: 'x', INTERNAL_TOKEN: 'x',
+    FIREBASE_PROJECT_ID: 'x', INTERNAL_TOKEN: 'x', LINK_SECRET: 'link-secret',
   });
 
   it('builds a body PayPal accepts, and returns a usable checkout link', async () => {

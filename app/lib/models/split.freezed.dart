@@ -290,6 +290,285 @@ as String,
 
 
 /// @nodoc
+mixin _$LineClaims {
+
+ List<Claim> get claims; bool get shared;
+/// Create a copy of LineClaims
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LineClaimsCopyWith<LineClaims> get copyWith => _$LineClaimsCopyWithImpl<LineClaims>(this as LineClaims, _$identity);
+
+  /// Serializes this LineClaims to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as LineClaims;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LineClaims&&const DeepCollectionEquality().equals(other.claims, _this.claims)&&(identical(other.shared, _this.shared) || other.shared == _this.shared));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as LineClaims;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.claims),_this.shared);
+}
+
+@override
+String toString() {
+  final _this = this as LineClaims;
+  return 'LineClaims(claims: ${_this.claims}, shared: ${_this.shared})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LineClaimsCopyWith<$Res>  {
+  factory $LineClaimsCopyWith(LineClaims value, $Res Function(LineClaims) _then) = _$LineClaimsCopyWithImpl;
+@useResult
+$Res call({
+ List<Claim> claims, bool shared
+});
+
+
+
+
+}
+/// @nodoc
+class _$LineClaimsCopyWithImpl<$Res>
+    implements $LineClaimsCopyWith<$Res> {
+  _$LineClaimsCopyWithImpl(this._self, this._then);
+
+  final LineClaims _self;
+  final $Res Function(LineClaims) _then;
+
+/// Create a copy of LineClaims
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? claims = null,Object? shared = null,}) {
+  return _then(LineClaims(
+claims: null == claims ? _self.claims : claims // ignore: cast_nullable_to_non_nullable
+as List<Claim>,shared: null == shared ? _self.shared : shared // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [LineClaims].
+extension LineClaimsPatterns on LineClaims {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _LineClaims value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _LineClaims() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _LineClaims value)  $default,){
+final _that = this;
+switch (_that) {
+case _LineClaims():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _LineClaims value)?  $default,){
+final _that = this;
+switch (_that) {
+case _LineClaims() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<Claim> claims,  bool shared)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _LineClaims() when $default != null:
+return $default(_that.claims,_that.shared);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<Claim> claims,  bool shared)  $default,) {final _that = this;
+switch (_that) {
+case _LineClaims():
+return $default(_that.claims,_that.shared);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<Claim> claims,  bool shared)?  $default,) {final _that = this;
+switch (_that) {
+case _LineClaims() when $default != null:
+return $default(_that.claims,_that.shared);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _LineClaims implements LineClaims {
+  const _LineClaims({ List<Claim> claims = const <Claim>[], this.shared = false}): _claims = claims;
+  factory _LineClaims.fromJson(Map<String, dynamic> json) => _$LineClaimsFromJson(json);
+
+ final  List<Claim> _claims;
+@override@JsonKey() List<Claim> get claims {
+  if (_claims is EqualUnmodifiableListView) return _claims;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_claims);
+}
+
+@override@JsonKey() final  bool shared;
+
+/// Create a copy of LineClaims
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$LineClaimsCopyWith<_LineClaims> get copyWith => __$LineClaimsCopyWithImpl<_LineClaims>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$LineClaimsToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _LineClaims&&const DeepCollectionEquality().equals(other.claims, _claims)&&(identical(other.shared, shared) || other.shared == shared));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_claims),shared);
+}
+
+@override
+String toString() {
+    return 'LineClaims(claims: $claims, shared: $shared)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$LineClaimsCopyWith<$Res> implements $LineClaimsCopyWith<$Res> {
+  factory _$LineClaimsCopyWith(_LineClaims value, $Res Function(_LineClaims) _then) = __$LineClaimsCopyWithImpl;
+@override @useResult
+$Res call({
+ List<Claim> claims, bool shared
+});
+
+
+
+
+}
+/// @nodoc
+class __$LineClaimsCopyWithImpl<$Res>
+    implements _$LineClaimsCopyWith<$Res> {
+  __$LineClaimsCopyWithImpl(this._self, this._then);
+
+  final _LineClaims _self;
+  final $Res Function(_LineClaims) _then;
+
+/// Create a copy of LineClaims
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? claims = null,Object? shared = null,}) {
+  return _then(_LineClaims(
+claims: null == claims ? _self._claims : claims // ignore: cast_nullable_to_non_nullable
+as List<Claim>,shared: null == shared ? _self.shared : shared // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$Rules {
 
 /// 'proportional' ("By what they had") or 'even'.
@@ -1460,7 +1739,7 @@ mixin _$SplitDoc {
 
  String get id; String get title; String? get merchant;/// ISO date, e.g. 2026-10-02.
  String? get receiptDate;/// draft, claiming, collecting, settled or cancelled.
- String get status; Receipt get receipt; List<Ambiguity> get receiptAmbiguities; Map<String, List<Claim>> get claims; Rules get rules; String get organiserParticipantId; Computed? get computed;@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? get createdAt;@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? get updatedAt;
+ String get status; Receipt get receipt; List<Ambiguity> get receiptAmbiguities;@JsonKey(fromJson: claimsFromJson, toJson: claimsToJson) Map<String, LineClaims> get claims; Rules get rules; String get organiserParticipantId; Computed? get computed;@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? get createdAt;@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? get updatedAt;
 /// Create a copy of SplitDoc
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1498,7 +1777,7 @@ abstract mixin class $SplitDocCopyWith<$Res>  {
   factory $SplitDocCopyWith(SplitDoc value, $Res Function(SplitDoc) _then) = _$SplitDocCopyWithImpl;
 @useResult
 $Res call({
- String id, String title, String? merchant, String? receiptDate, String status, Receipt receipt, List<Ambiguity> receiptAmbiguities, Map<String, List<Claim>> claims, Rules rules, String organiserParticipantId, Computed? computed,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? createdAt,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? updatedAt
+ String id, String title, String? merchant, String? receiptDate, String status, Receipt receipt, List<Ambiguity> receiptAmbiguities,@JsonKey(fromJson: claimsFromJson, toJson: claimsToJson) Map<String, LineClaims> claims, Rules rules, String organiserParticipantId, Computed? computed,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? createdAt,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? updatedAt
 });
 
 
@@ -1525,7 +1804,7 @@ as String?,status: null == status ? _self.status : status // ignore: cast_nullab
 as String,receipt: null == receipt ? _self.receipt : receipt // ignore: cast_nullable_to_non_nullable
 as Receipt,receiptAmbiguities: null == receiptAmbiguities ? _self.receiptAmbiguities : receiptAmbiguities // ignore: cast_nullable_to_non_nullable
 as List<Ambiguity>,claims: null == claims ? _self.claims : claims // ignore: cast_nullable_to_non_nullable
-as Map<String, List<Claim>>,rules: null == rules ? _self.rules : rules // ignore: cast_nullable_to_non_nullable
+as Map<String, LineClaims>,rules: null == rules ? _self.rules : rules // ignore: cast_nullable_to_non_nullable
 as Rules,organiserParticipantId: null == organiserParticipantId ? _self.organiserParticipantId : organiserParticipantId // ignore: cast_nullable_to_non_nullable
 as String,computed: freezed == computed ? _self.computed : computed // ignore: cast_nullable_to_non_nullable
 as Computed?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
@@ -1645,7 +1924,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String title,  String? merchant,  String? receiptDate,  String status,  Receipt receipt,  List<Ambiguity> receiptAmbiguities,  Map<String, List<Claim>> claims,  Rules rules,  String organiserParticipantId,  Computed? computed, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? createdAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String title,  String? merchant,  String? receiptDate,  String status,  Receipt receipt,  List<Ambiguity> receiptAmbiguities, @JsonKey(fromJson: claimsFromJson, toJson: claimsToJson)  Map<String, LineClaims> claims,  Rules rules,  String organiserParticipantId,  Computed? computed, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? createdAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SplitDoc() when $default != null:
 return $default(_that.id,_that.title,_that.merchant,_that.receiptDate,_that.status,_that.receipt,_that.receiptAmbiguities,_that.claims,_that.rules,_that.organiserParticipantId,_that.computed,_that.createdAt,_that.updatedAt);case _:
@@ -1666,7 +1945,7 @@ return $default(_that.id,_that.title,_that.merchant,_that.receiptDate,_that.stat
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String title,  String? merchant,  String? receiptDate,  String status,  Receipt receipt,  List<Ambiguity> receiptAmbiguities,  Map<String, List<Claim>> claims,  Rules rules,  String organiserParticipantId,  Computed? computed, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? createdAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String title,  String? merchant,  String? receiptDate,  String status,  Receipt receipt,  List<Ambiguity> receiptAmbiguities, @JsonKey(fromJson: claimsFromJson, toJson: claimsToJson)  Map<String, LineClaims> claims,  Rules rules,  String organiserParticipantId,  Computed? computed, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? createdAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _SplitDoc():
 return $default(_that.id,_that.title,_that.merchant,_that.receiptDate,_that.status,_that.receipt,_that.receiptAmbiguities,_that.claims,_that.rules,_that.organiserParticipantId,_that.computed,_that.createdAt,_that.updatedAt);case _:
@@ -1686,7 +1965,7 @@ return $default(_that.id,_that.title,_that.merchant,_that.receiptDate,_that.stat
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String title,  String? merchant,  String? receiptDate,  String status,  Receipt receipt,  List<Ambiguity> receiptAmbiguities,  Map<String, List<Claim>> claims,  Rules rules,  String organiserParticipantId,  Computed? computed, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? createdAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String title,  String? merchant,  String? receiptDate,  String status,  Receipt receipt,  List<Ambiguity> receiptAmbiguities, @JsonKey(fromJson: claimsFromJson, toJson: claimsToJson)  Map<String, LineClaims> claims,  Rules rules,  String organiserParticipantId,  Computed? computed, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? createdAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _SplitDoc() when $default != null:
 return $default(_that.id,_that.title,_that.merchant,_that.receiptDate,_that.status,_that.receipt,_that.receiptAmbiguities,_that.claims,_that.rules,_that.organiserParticipantId,_that.computed,_that.createdAt,_that.updatedAt);case _:
@@ -1701,7 +1980,7 @@ return $default(_that.id,_that.title,_that.merchant,_that.receiptDate,_that.stat
 @JsonSerializable()
 
 class _SplitDoc extends SplitDoc {
-  const _SplitDoc({required this.id, this.title = 'Your bill', this.merchant, this.receiptDate, this.status = 'draft', this.receipt = const Receipt(),  List<Ambiguity> receiptAmbiguities = const <Ambiguity>[],  Map<String, List<Claim>> claims = const <String, List<Claim>>{}, this.rules = const Rules(), this.organiserParticipantId = '', this.computed, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) this.createdAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) this.updatedAt}): _receiptAmbiguities = receiptAmbiguities,_claims = claims,super._();
+  const _SplitDoc({required this.id, this.title = 'Your bill', this.merchant, this.receiptDate, this.status = 'draft', this.receipt = const Receipt(),  List<Ambiguity> receiptAmbiguities = const <Ambiguity>[], @JsonKey(fromJson: claimsFromJson, toJson: claimsToJson)  Map<String, LineClaims> claims = const <String, LineClaims>{}, this.rules = const Rules(), this.organiserParticipantId = '', this.computed, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) this.createdAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) this.updatedAt}): _receiptAmbiguities = receiptAmbiguities,_claims = claims,super._();
   factory _SplitDoc.fromJson(Map<String, dynamic> json) => _$SplitDocFromJson(json);
 
 @override final  String id;
@@ -1719,8 +1998,8 @@ class _SplitDoc extends SplitDoc {
   return EqualUnmodifiableListView(_receiptAmbiguities);
 }
 
- final  Map<String, List<Claim>> _claims;
-@override@JsonKey() Map<String, List<Claim>> get claims {
+ final  Map<String, LineClaims> _claims;
+@override@JsonKey(fromJson: claimsFromJson, toJson: claimsToJson) Map<String, LineClaims> get claims {
   if (_claims is EqualUnmodifiableMapView) return _claims;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableMapView(_claims);
@@ -1767,7 +2046,7 @@ abstract mixin class _$SplitDocCopyWith<$Res> implements $SplitDocCopyWith<$Res>
   factory _$SplitDocCopyWith(_SplitDoc value, $Res Function(_SplitDoc) _then) = __$SplitDocCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String title, String? merchant, String? receiptDate, String status, Receipt receipt, List<Ambiguity> receiptAmbiguities, Map<String, List<Claim>> claims, Rules rules, String organiserParticipantId, Computed? computed,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? createdAt,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? updatedAt
+ String id, String title, String? merchant, String? receiptDate, String status, Receipt receipt, List<Ambiguity> receiptAmbiguities,@JsonKey(fromJson: claimsFromJson, toJson: claimsToJson) Map<String, LineClaims> claims, Rules rules, String organiserParticipantId, Computed? computed,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? createdAt,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? updatedAt
 });
 
 
@@ -1794,7 +2073,7 @@ as String?,status: null == status ? _self.status : status // ignore: cast_nullab
 as String,receipt: null == receipt ? _self.receipt : receipt // ignore: cast_nullable_to_non_nullable
 as Receipt,receiptAmbiguities: null == receiptAmbiguities ? _self._receiptAmbiguities : receiptAmbiguities // ignore: cast_nullable_to_non_nullable
 as List<Ambiguity>,claims: null == claims ? _self._claims : claims // ignore: cast_nullable_to_non_nullable
-as Map<String, List<Claim>>,rules: null == rules ? _self.rules : rules // ignore: cast_nullable_to_non_nullable
+as Map<String, LineClaims>,rules: null == rules ? _self.rules : rules // ignore: cast_nullable_to_non_nullable
 as Rules,organiserParticipantId: null == organiserParticipantId ? _self.organiserParticipantId : organiserParticipantId // ignore: cast_nullable_to_non_nullable
 as String,computed: freezed == computed ? _self.computed : computed // ignore: cast_nullable_to_non_nullable
 as Computed?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable

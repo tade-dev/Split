@@ -6,7 +6,7 @@ const env = loadEnv({
   NODE_ENV: 'test',
   PAYPAL_CLIENT_ID: 'id', PAYPAL_CLIENT_SECRET: 'secret', PAYPAL_WEBHOOK_ID: 'wh',
   OPENAI_API_KEY: 'x', OPENAI_VISION_MODEL: 'm',
-  FIREBASE_PROJECT_ID: 'p', INTERNAL_TOKEN: 't',
+  FIREBASE_PROJECT_ID: 'p', INTERNAL_TOKEN: 't', LINK_SECRET: 'link-secret',
 });
 
 afterEach(() => vi.unstubAllGlobals());

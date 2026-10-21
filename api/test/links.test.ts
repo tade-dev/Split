@@ -1,26 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import {
-  invoiceSignature,
-  invoiceUrl,
-  verifyInvoiceSignature,
-} from '../src/domain/links.js';
+import { shareSignature, shareUrl, verifyShareSignature } from '../src/domain/links.js';
 
-const SECRET = 'invoice-secret';
+const SECRET = 'link-secret';
 
-describe('link signatures', () => {
-  it('verifies its own signature and rejects others', () => {
-    const sig = invoiceSignature(SECRET, 's', 'o');
-    expect(verifyInvoiceSignature(SECRET, 's', 'o', sig)).toBe(true);
-    expect(verifyInvoiceSignature(SECRET, 's', 'o2', sig)).toBe(false);
-    expect(verifyInvoiceSignature('other', 's', 'o', sig)).toBe(false);
-    expect(verifyInvoiceSignature(SECRET, 's', 'o', 'short')).toBe(false);
-    expect(verifyInvoiceSignature(SECRET, '../x', 'o', sig)).toBe(false);
+describe('share link signatures', () => {
+  it('is stable and 32 base64url characters', () => {
+    const sig = shareSignature(SECRET, 'kemi', 'split1', 'dan');
+    expect(sig).toBe(shareSignature(SECRET, 'kemi', 'split1', 'dan'));
+    expect(sig).toMatch(/^[A-Za-z0-9_-]{32}$/);
+  });
+
+  it('verifies its own signature and rejects any change', () => {
+    const sig = shareSignature(SECRET, 'kemi', 'split1', 'dan');
+    expect(verifyShareSignature(SECRET, 'kemi', 'split1', 'dan', sig)).toBe(true);
+    expect(verifyShareSignature(SECRET, 'kemi', 'split1', 'josh', sig)).toBe(false);
+    expect(verifyShareSignature(SECRET, 'kemi', 'split2', 'dan', sig)).toBe(false);
+    expect(verifyShareSignature('other', 'kemi', 'split1', 'dan', sig)).toBe(false);
+    expect(verifyShareSignature(SECRET, 'kemi', 'split1', 'dan', sig.slice(0, 31))).toBe(false);
+    expect(verifyShareSignature(SECRET, 'kemi', 'split1', 'dan', `${sig}x`)).toBe(false);
+    expect(verifyShareSignature(SECRET, '../x', 'split1', 'dan', sig)).toBe(false);
   });
 
   it('builds a URL that carries a signature it verifies', () => {
-    const url = invoiceUrl('https://api.example.com', SECRET, 'organiser-a', 'order123abc');
+    const url = shareUrl('https://api.example.com', SECRET, 'kemi', 'split1', 'dan');
     const sig = url.split('/').pop()!;
-    expect(url).toBe(`https://api.example.com/v1/invoice/organiser-a/order123abc/${sig}`);
-    expect(verifyInvoiceSignature(SECRET, 'organiser-a', 'order123abc', sig)).toBe(true);
+    expect(url).toBe(`https://api.example.com/v1/s/kemi/split1/dan/${sig}`);
+    expect(verifyShareSignature(SECRET, 'kemi', 'split1', 'dan', sig)).toBe(true);
   });
 });
