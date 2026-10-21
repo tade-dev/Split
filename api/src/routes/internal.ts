@@ -5,14 +5,14 @@ import { ApiError } from '../lib/errors.js';
 import type { Env } from '../env.js';
 import type { PayPalFetch } from '../paypal/client.js';
 import { paypalIssue } from '../paypal/events.js';
-import { OPEN_STATUSES as OPEN, reconcileOrder } from '../paypal/reconcile.js';
-import { EXPIRABLE_STATUSES, closeOrder, expiryDueMs } from '../domain/closing.js';
+import { reconcileShare } from '../paypal/reconcile.js';
 import { DEFAULT_ORDER_EXPIRY_HOURS } from '../env.js';
-import type { OrderDoc, OrderStatus } from '../domain/orders.js';
-import { millis, nudgeDue } from '../domain/nudge.js';
+import { millis, nudgeDue, type NudgeOrder } from '../domain/nudge.js';
+import { OPEN_SHARE_STATUSES } from '../domain/shares.js';
+import type { ParticipantDoc, ParticipantStatus } from '../domain/splits.js';
 import { draftNudge } from '../ai/draft_nudge.js';
 import type { ChatTransport } from '../ai/client.js';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, type QueryDocumentSnapshot } from 'firebase-admin/firestore';
 const TWO_MINUTES_MS = 2 * 60 * 1000;
 
 function authorised(provided: string, expected: string): boolean {
@@ -22,10 +22,30 @@ function authorised(provided: string, expected: string): boolean {
   return timingSafeEqual(a, b);
 }
 
-function tooRecent(linkSentAt: unknown, now: number): boolean {
-  if (!linkSentAt || typeof linkSentAt !== 'object' || !('toMillis' in linkSentAt)) return false;
-  const ms = (linkSentAt as { toMillis: () => number }).toMillis();
-  return typeof ms === 'number' && !Number.isNaN(ms) && now - ms < TWO_MINUTES_MS;
+const HOUR_MS = 60 * 60 * 1000;
+
+/** Shares an unpaid PayPal order may be replaced on (plan E8). */
+const EXPIRABLE: readonly ParticipantStatus[] = ['owes', 'link_opened', 'declined'];
+
+/**
+ * Every share with a PayPal order out, in splits still collecting. Walked
+ * organiser by organiser rather than as one collection-group query, which
+ * would need an index exemption on `status` as well.
+ */
+async function sharesWithOrders(db: Firestore, statuses: readonly ParticipantStatus[]): Promise<QueryDocumentSnapshot[]> {
+  const out: QueryDocumentSnapshot[] = [];
+  const organisers = await db.collection('organisers').listDocuments();
+  for (const organiser of organisers) {
+    const splits = await organiser.collection('splits').where('status', '==', 'collecting').get();
+    for (const split of splits.docs) {
+      const people = await split.ref.collection('participants').where('status', 'in', [...statuses]).get();
+      for (const doc of people.docs) {
+        const id = doc.get('paypalOrderId');
+        if (typeof id === 'string' && id) out.push(doc);
+      }
+    }
+  }
+  return out;
 }
 
 export function internalRouter(deps: {
@@ -48,35 +68,29 @@ export function internalRouter(deps: {
     next();
   };
 
+  // The safety net under capture on return and the webhooks: asks PayPal
+  // about every share still mid-payment and moves it to match. Orders made
+  // in the last two minutes are left to the return page.
   router.post('/internal/workflows/reconcile', internalOnly, async (_req, res, next) => {
-
     const now = (deps.now ?? Date.now)();
     let checked = 0;
     let promoted = 0;
     let failed = 0;
 
     try {
-      const organisers = await deps.db.collection('organisers').get();
-      for (const seller of organisers.docs) {
-        for (const status of OPEN) {
-          const orders = await seller.ref.collection('orders').where('status', '==', status).get();
-          for (const doc of orders.docs) {
-            const paypalOrderId = doc.get('paypalOrderId');
-            if (typeof paypalOrderId !== 'string' || !paypalOrderId) continue;
-            if (tooRecent(doc.get('linkSentAt'), now)) continue;
-            checked += 1;
-            try {
-              if (await reconcileOrder(deps.paypal, doc.ref, doc.id, status, paypalOrderId)) promoted += 1;
-            } catch (err) {
-              failed += 1;
-              const issue = paypalIssue(err);
-              console.error(JSON.stringify({
-                source: 'paypal_reconcile',
-                orderId: doc.id,
-                issue: issue ?? 'unknown',
-              }));
-            }
-          }
+      for (const doc of await sharesWithOrders(deps.db, OPEN_SHARE_STATUSES)) {
+        const created = millis(doc.get('paypalOrderCreatedAt'));
+        if (created !== null && now - created < TWO_MINUTES_MS) continue;
+        checked += 1;
+        try {
+          if ((await reconcileShare(deps.paypal, doc.ref, doc.get('paypalOrderId') as string, 'reconcile')).moved) promoted += 1;
+        } catch (err) {
+          failed += 1;
+          console.error(JSON.stringify({
+            source: 'paypal_reconcile',
+            participantId: doc.id,
+            issue: paypalIssue(err) ?? 'unknown',
+          }));
         }
       }
       res.json({ checked, promoted, failed });
@@ -85,11 +99,11 @@ export function internalRouter(deps: {
     }
   });
 
-  // Closes unpaid links that have been out longer than ORDER_EXPIRY_HOURS.
-  // Meant to run hourly beside the nudge sweep (see render.yaml). Each order
-  // is checked with PayPal first, so a payment whose webhook never landed is
-  // marked paid instead of expired; if PayPal cannot be asked, the order is
-  // left for the next run rather than expired on a guess.
+  // Replaces unpaid PayPal orders older than ORDER_EXPIRY_HOURS (plan E8).
+  // The friend's link stays valid: the share drops back to owes, and their
+  // next Pay tap makes a fresh order. Each order is checked with PayPal
+  // first, so a payment whose signals never landed is marked paid instead;
+  // if PayPal cannot be asked, the share is left for the next run.
   router.post('/internal/workflows/expire-sweep', internalOnly, async (_req, res, next) => {
     const now = (deps.now ?? Date.now)();
     const ttlHours = deps.env.ORDER_EXPIRY_HOURS ?? DEFAULT_ORDER_EXPIRY_HOURS;
@@ -99,46 +113,53 @@ export function internalRouter(deps: {
     let failed = 0;
 
     try {
-      const organisers = await deps.db.collection('organisers').get();
-      for (const seller of organisers.docs) {
-        for (const status of EXPIRABLE_STATUSES) {
-          const orders = await seller.ref.collection('orders').where('status', '==', status).get();
-          for (const doc of orders.docs) {
-            const due = expiryDueMs(doc.get('linkSentAt'), ttlHours);
-            if (due === null || now < due) continue;
-            scanned += 1;
-
-            const paypalOrderId = doc.get('paypalOrderId');
-            if (typeof paypalOrderId === 'string' && paypalOrderId) {
-              try {
-                if (await reconcileOrder(deps.paypal, doc.ref, doc.id, status, paypalOrderId)) {
-                  const after = (await doc.ref.get()).get('status') as OrderStatus;
-                  if (!EXPIRABLE_STATUSES.includes(after)) { kept += 1; continue; }
-                }
-              } catch (err) {
-                failed += 1;
-                console.error(JSON.stringify({
-                  source: 'order_expiry',
-                  orderId: doc.id,
-                  issue: paypalIssue(err) ?? 'unknown',
-                }));
-                continue;
-              }
-            }
-
-            try {
-              const { closed } = await closeOrder(doc.ref, 'expired', EXPIRABLE_STATUSES);
-              if (closed) expired += 1;
-            } catch (err) {
-              if (err instanceof ApiError && err.code === 'ORDER_STATE_INVALID') {
-                // Moved under us, most likely to paid. Paid wins.
-                kept += 1;
-              } else {
-                throw err;
-              }
-            }
+      for (const doc of await sharesWithOrders(deps.db, EXPIRABLE)) {
+        const created = millis(doc.get('paypalOrderCreatedAt'));
+        if (created === null || now < created + ttlHours * HOUR_MS) continue;
+        scanned += 1;
+        const paypalOrderId = doc.get('paypalOrderId') as string;
+        try {
+          if ((await reconcileShare(deps.paypal, doc.ref, paypalOrderId, 'expiry')).moved) {
+            kept += 1;
+            continue;
           }
+        } catch (err) {
+          failed += 1;
+          console.error(JSON.stringify({
+            source: 'order_expiry',
+            participantId: doc.id,
+            issue: paypalIssue(err) ?? 'unknown',
+          }));
+          continue;
         }
+        // Inside a transaction, so a capture landing between the check and
+        // this write is never undone: paid wins.
+        const replaced = await deps.db.runTransaction(async (tx) => {
+          const fresh = await tx.get(doc.ref);
+          const person = fresh.data() as ParticipantDoc | undefined;
+          if (!person || person.paypalOrderId !== paypalOrderId || !EXPIRABLE.includes(person.status)) return false;
+          tx.update(doc.ref, {
+            status: 'owes',
+            paypalOrderId: null,
+            approvalUrl: null,
+            paypalOrderCreatedAt: null,
+            supersededPaypalOrderIds: FieldValue.arrayUnion(paypalOrderId),
+          });
+          tx.set(doc.ref.collection('paymentEvents').doc(`expire-${paypalOrderId}`), {
+            id: `expire-${paypalOrderId}`,
+            eventType: 'expired',
+            paypalResourceId: paypalOrderId,
+            amountMinor: null,
+            raw: { source: 'expiry_sweep', from: person.status },
+            signatureVerified: false,
+            receivedAt: FieldValue.serverTimestamp(),
+            processedAt: FieldValue.serverTimestamp(),
+            processingError: null,
+          });
+          return true;
+        });
+        if (replaced) expired += 1;
+        else kept += 1;
       }
       res.json({ scanned, expired, kept, failed });
     } catch (err) {
@@ -160,7 +181,7 @@ export function internalRouter(deps: {
       for (const seller of organisers.docs) {
         const orders = await seller.ref.collection('orders').where('status', '==', 'link_sent').get();
         for (const doc of orders.docs) {
-          const order = doc.data() as OrderDoc & { linkSentAt?: unknown };
+          const order = doc.data() as NudgeOrder & { linkSentAt?: unknown };
           if (!nudgeDue(order, now)) continue;
           scanned += 1;
           if (order.nudge && (order.nudge as { draftText?: unknown }).draftText) { skipped += 1; continue; }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  interimFromPayPalOrder,
+  captureOutcome,
+  orderCustomId,
   parseCustomId,
   parsePayPalEvent,
   reconcileAction,
@@ -15,15 +16,15 @@ describe('parsePayPalEvent', () => {
       event_type: 'CHECKOUT.ORDER.APPROVED',
       resource: {
         id: 'PP-1',
-        purchase_units: [{ custom_id: 'organiser-a:o1' }],
+        purchase_units: [{ custom_id: 'kemi:s1:dan' }],
       },
     });
     expect(event).toMatchObject({
       id: 'WH-1',
       paypalOrderId: 'PP-1',
-      customId: 'organiser-a:o1',
+      customId: 'kemi:s1:dan',
     });
-    expect(parseCustomId(event!.customId)).toEqual({ organiserId: 'organiser-a', orderId: 'o1' });
+    expect(parseCustomId(event!.customId)).toEqual({ organiserId: 'kemi', splitId: 's1', participantId: 'dan' });
   });
 
   it('reads a capture from the capture resource', () => {
@@ -33,7 +34,7 @@ describe('parsePayPalEvent', () => {
       resource: {
         id: 'CAP-1',
         status: 'COMPLETED',
-        custom_id: 'organiser-a:o1',
+        custom_id: 'kemi:s1:dan',
         amount: { currency_code: 'GBP', value: '42.00' },
         supplementary_data: { related_ids: { order_id: 'PP-1' } },
       },
@@ -46,23 +47,38 @@ describe('parsePayPalEvent', () => {
   });
 });
 
-describe('interimFromPayPalOrder', () => {
-  it('treats a COMPLETED capture response as interim, not paid', () => {
-    expect(
-      interimFromPayPalOrder({
-        status: 'COMPLETED',
-        purchase_units: [{ payments: { captures: [{ id: 'CAP-1', status: 'COMPLETED' }] } }],
-      }).interim,
-    ).toBe('processing');
+describe('parseCustomId', () => {
+  it('needs exactly three parts, none empty', () => {
+    expect(parseCustomId('kemi:s1:dan')).toEqual({ organiserId: 'kemi', splitId: 's1', participantId: 'dan' });
+    for (const bad of [null, '', 'kemi:o1', 'kemi:s1:dan:x', 'kemi::dan', ':s1:dan', 'kemi:s1:']) {
+      expect(parseCustomId(bad)).toBeNull();
+    }
   });
 
-  it('keeps a pending capture pending', () => {
+  it('reads custom_id off a GET order response', () => {
+    expect(orderCustomId({ purchase_units: [{ custom_id: 'kemi:s1:dan' }] })).toBe('kemi:s1:dan');
+    expect(orderCustomId({ purchase_units: [] })).toBeNull();
+  });
+});
+
+describe('captureOutcome', () => {
+  it('treats a COMPLETED capture response as paid: for a payee order it may be the only signal', () => {
     expect(
-      interimFromPayPalOrder({
+      captureOutcome({
+        status: 'COMPLETED',
+        purchase_units: [{ payments: { captures: [{ id: 'CAP-1', status: 'COMPLETED' }] } }],
+      }),
+    ).toEqual({ status: 'paid', captureId: 'CAP-1' });
+  });
+
+  it('keeps a pending capture pending, and says nothing before a capture', () => {
+    expect(
+      captureOutcome({
         status: 'COMPLETED',
         purchase_units: [{ payments: { captures: [{ id: 'CAP-1', status: 'PENDING' }] } }],
-      }).interim,
+      }).status,
     ).toBe('pending');
+    expect(captureOutcome({ status: 'APPROVED', purchase_units: [{}] }).status).toBeNull();
   });
 });
 
@@ -71,12 +87,12 @@ describe('statusForEvent', () => {
     expect(statusForEvent('PAYMENT.CAPTURE.COMPLETED')).toBe('paid');
     expect(statusForEvent('CHECKOUT.ORDER.APPROVED')).toBeNull();
     expect(statusForEvent('PAYMENT.CAPTURE.REFUNDED')).toBeNull();
-    expect(statusForEvent('CHECKOUT.PAYMENT-APPROVAL.REVERSED')).toBe('link_sent');
+    expect(statusForEvent('CHECKOUT.PAYMENT-APPROVAL.REVERSED')).toBe('owes');
   });
 });
 
 describe('reconcileAction', () => {
-  it('treats a completed capture as paid, because the webhook that would is missing', () => {
+  it('treats a completed capture as paid', () => {
     expect(reconcileAction({
       status: 'COMPLETED',
       purchase_units: [{ payments: { captures: [{ id: 'CAP-1', status: 'COMPLETED' }] } }],
@@ -86,7 +102,7 @@ describe('reconcileAction', () => {
   it('asks for a capture when the buyer has approved and nothing was captured', () => {
     expect(reconcileAction({
       status: 'APPROVED',
-      purchase_units: [{ custom_id: 'organiser-a:o1' }],
+      purchase_units: [{ custom_id: 'kemi:s1:dan' }],
     })).toEqual({ kind: 'capture' });
   });
 

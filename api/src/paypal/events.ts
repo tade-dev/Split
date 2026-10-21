@@ -1,5 +1,4 @@
 import { ApiError } from '../lib/errors.js';
-import type { OrderStatus } from '../domain/orders.js';
 import type { PayPalFetch } from './client.js';
 
 export const HANDLED_EVENTS = new Set([
@@ -31,11 +30,20 @@ export function amountToMinor(value: unknown): number | null {
   return Number(value.replace('.', ''));
 }
 
-export function parseCustomId(value: string | null): { organiserId: string; orderId: string } | null {
+/** `organiserId:splitId:participantId`, the custom_id the Pay route sets. Anything else is null. */
+export function parseCustomId(value: string | null): { organiserId: string; splitId: string; participantId: string } | null {
   if (!value) return null;
-  const sep = value.indexOf(':');
-  if (sep <= 0 || sep === value.length - 1) return null;
-  return { organiserId: value.slice(0, sep), orderId: value.slice(sep + 1) };
+  const parts = value.split(':');
+  if (parts.length !== 3 || parts.some((part) => part.length === 0)) return null;
+  const [organiserId, splitId, participantId] = parts as [string, string, string];
+  return { organiserId, splitId, participantId };
+}
+
+/** custom_id from a GET order response, for when nothing else says whose share it is. */
+export function orderCustomId(body: unknown): string | null {
+  const order = (body ?? {}) as Record<string, unknown>;
+  const units = Array.isArray(order.purchase_units) ? order.purchase_units : [];
+  return str(((units[0] ?? {}) as Record<string, unknown>).custom_id);
 }
 
 export function parsePayPalEvent(body: unknown): PayPalEvent | null {
@@ -77,39 +85,39 @@ export function parsePayPalEvent(body: unknown): PayPalEvent | null {
   };
 }
 
-/**
- * What the capture *response* may set. COMPLETED here is not Paid: that waits
- * for PAYMENT.CAPTURE.COMPLETED.
- */
-export type CaptureInterim = 'link_sent' | 'processing' | 'pending' | 'declined';
+/** Where a share stands after a capture or GET order response. Null: nothing captured yet. */
+export type CaptureOutcome = { status: 'paid' | 'pending' | 'declined' | null; captureId: string | null };
 
-export function interimFromPayPalOrder(body: unknown): { interim: CaptureInterim; captureId: string | null } {
+/**
+ * Reads a capture or GET order response. A COMPLETED capture is Paid: for an
+ * order paid straight to the organiser the capture response may be the only
+ * signal there is (spec §0, plan Review Focus 6), so nothing waits for a
+ * webhook that may never come.
+ */
+export function captureOutcome(body: unknown): CaptureOutcome {
   const order = (body ?? {}) as Record<string, unknown>;
   const units = Array.isArray(order.purchase_units) ? order.purchase_units : [];
   const unit = (units[0] ?? {}) as Record<string, unknown>;
   const payments = (unit.payments ?? {}) as Record<string, unknown>;
   const captures = Array.isArray(payments.captures) ? payments.captures : [];
   const capture = (captures[0] ?? {}) as Record<string, unknown>;
-  const captureStatus = str(capture.status);
-  const orderStatus = str(order.status);
   const captureId = str(capture.id);
-  const status = captureStatus ?? orderStatus ?? '';
-
-  if (!captureStatus && orderStatus !== 'COMPLETED') {
-    return { interim: 'link_sent', captureId };
+  switch (str(capture.status)) {
+    case 'COMPLETED':
+      return { status: 'paid', captureId };
+    case 'PENDING':
+      return { status: 'pending', captureId };
+    case 'DECLINED':
+    case 'DENIED':
+    case 'FAILED':
+      return { status: 'declined', captureId };
+    default:
+      return { status: null, captureId };
   }
-  if (status === 'PENDING') return { interim: 'pending', captureId };
-  if (status === 'DECLINED' || status === 'DENIED' || status === 'FAILED') {
-    return { interim: 'declined', captureId };
-  }
-  if (status === 'COMPLETED' || orderStatus === 'COMPLETED') {
-    return { interim: 'processing', captureId };
-  }
-  return { interim: 'link_sent', captureId };
 }
 
-/** The order status a webhook is allowed to move to. Refunds do not move it. */
-export function statusForEvent(eventType: string): OrderStatus | null {
+/** Where a webhook moves a share. Refunds and approvals do not move it here. */
+export function statusForEvent(eventType: string): 'paid' | 'pending' | 'declined' | 'owes' | null {
   switch (eventType) {
     case 'PAYMENT.CAPTURE.COMPLETED':
       return 'paid';
@@ -118,7 +126,7 @@ export function statusForEvent(eventType: string): OrderStatus | null {
     case 'PAYMENT.CAPTURE.DENIED':
       return 'declined';
     case 'CHECKOUT.PAYMENT-APPROVAL.REVERSED':
-      return 'link_sent';
+      return 'owes';
     default:
       return null;
   }
@@ -157,40 +165,29 @@ export type ReconcileAction =
   | { kind: 'capture' }
   | { kind: 'move'; status: 'paid' | 'pending' | 'declined'; captureId: string | null };
 
-/**
- * What a missed webhook should do, read from PayPal's own order.
- *
- * A COMPLETED capture is Paid here. The webhook handler leaves that as
- * `processing` and waits for PAYMENT.CAPTURE.COMPLETED; this sweep runs
- * because that event never landed.
- */
+/** What to do with a share, read from PayPal's own order. */
 export function reconcileAction(body: unknown): ReconcileAction {
-  const outcome = interimFromPayPalOrder(body);
-  if (outcome.interim === 'pending') {
-    return { kind: 'move', status: 'pending', captureId: outcome.captureId };
-  }
-  if (outcome.interim === 'declined') {
-    return { kind: 'move', status: 'declined', captureId: outcome.captureId };
-  }
-  if (outcome.captureId && outcome.interim === 'processing') {
-    return { kind: 'move', status: 'paid', captureId: outcome.captureId };
-  }
+  const outcome = captureOutcome(body);
+  if (outcome.status) return { kind: 'move', status: outcome.status, captureId: outcome.captureId };
   const order = (body ?? {}) as Record<string, unknown>;
   const orderStatus = typeof order.status === 'string' ? order.status : '';
-  if (!outcome.captureId && (orderStatus === 'APPROVED' || orderStatus === 'COMPLETED')) {
-    return { kind: 'capture' };
-  }
+  if (orderStatus === 'APPROVED' || orderStatus === 'COMPLETED') return { kind: 'capture' };
   return { kind: 'leave' };
 }
 
+/**
+ * Captures a share's order. The request id names the participant and the
+ * order, so a retry is answered from PayPal's cache, and a fresh order after
+ * an expiry is never answered with the old one's capture.
+ */
 export async function capturePayPalOrder(
   call: PayPalFetch,
   paypalOrderId: string,
-  orderId: string,
+  participantId: string,
 ): Promise<unknown> {
   return call(`/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}/capture`, {
     method: 'POST',
-    requestId: `capture-${orderId}`,
+    requestId: `capture-${participantId}-${paypalOrderId}`,
     body: {},
   });
 }

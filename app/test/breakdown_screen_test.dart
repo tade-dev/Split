@@ -141,4 +141,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(_api.calls, ['unlock']);
   });
+
+  testWidgets('once settled it still points at the tracker, with no unlock', (tester) async {
+    await _pump(tester, _split(status: 'settled'));
+    expect(find.text('See who has paid'), findsOneWidget);
+    expect(find.text('Unlock to change something'), findsNothing);
+  });
 }

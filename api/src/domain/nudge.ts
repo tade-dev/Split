@@ -1,4 +1,20 @@
-import type { OrderDoc } from './orders.js';
+import type { Timestamp } from 'firebase-admin/firestore';
+
+/**
+ * The Sorted order a nudge is drafted for, from its retired domain/orders.ts.
+ * The nudge sweep still reads `organisers/{uid}/orders`; the friend version
+ * over participant shares is Week C.
+ */
+export type NudgeOrder = {
+  status: string;
+  buyerName: string | null;
+  lineItems: { nameRaw: string; nameResolved: string | null; qty: number }[];
+  amountDueMinor: number;
+  depositMinor: number | null;
+  fulfilment: { mode: string; date: string | null };
+  approvalUrl: string | null;
+  nudge: { count: number; lastSentAt: Timestamp | null; snoozedUntil: Timestamp | null } | null;
+};
 
 /**
  * Nudge timings, in one place, from the design spec's lifecycle table: the
@@ -32,7 +48,7 @@ export type NudgeState = {
  * sent, already moving at PayPal, or closed. Reasons are the seller's words.
  */
 export function nudgeRefusal(
-  order: Pick<OrderDoc, 'status' | 'approvalUrl'> & { linkSentAt?: unknown },
+  order: Pick<NudgeOrder, 'status' | 'approvalUrl'> & { linkSentAt?: unknown },
   nowMs: number,
 ): string | null {
   switch (order.status) {
@@ -66,7 +82,7 @@ export function nudgeRefusal(
  * for; this is what Split volunteers.
  */
 export function nudgeDue(
-  order: Pick<OrderDoc, 'status' | 'approvalUrl'> & { linkSentAt?: unknown; nudge?: NudgeState | null },
+  order: Pick<NudgeOrder, 'status' | 'approvalUrl'> & { linkSentAt?: unknown; nudge?: NudgeState | null },
   nowMs: number,
 ): boolean {
   if (nudgeRefusal(order, nowMs) !== null) return false;

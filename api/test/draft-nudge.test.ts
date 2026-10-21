@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { NUDGE_SYSTEM, draftNudge, fallbackNudge, nudgeProblem } from '../src/ai/draft_nudge.js';
 import type { ChatTransport } from '../src/ai/client.js';
-import type { OrderDoc } from '../src/domain/orders.js';
+import type { NudgeOrder } from '../src/domain/nudge.js';
 
 const order = {
   id: 'o1', buyerName: 'Priya K',
@@ -10,7 +10,7 @@ const order = {
   ],
   subtotalMinor: 5500, amountDueMinor: 2000, depositMinor: 2000,
   fulfilment: { mode: 'collection', date: '2026-10-17', notes: null },
-} as unknown as OrderDoc;
+} as unknown as NudgeOrder;
 
 const link = 'https://www.sandbox.paypal.com/checkoutnow?token=9QA1';
 

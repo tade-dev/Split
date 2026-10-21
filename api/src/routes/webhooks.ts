@@ -7,28 +7,20 @@ import type { Env } from '../env.js';
 import type { PayPalFetch } from '../paypal/client.js';
 import {
   HANDLED_EVENTS,
-  capturePayPalOrder,
-  getPayPalOrder,
-  interimFromPayPalOrder,
-  parseCustomId,
   parsePayPalEvent,
   paypalIssue,
   statusForEvent,
   verifyWebhookBody,
   type PayPalEvent,
 } from '../paypal/events.js';
-import { assertTransition, type OrderDoc, type OrderStatus } from '../domain/orders.js';
-import { isClosed } from '../domain/closing.js';
+import { locateShare, reconcileShare } from '../paypal/reconcile.js';
+import { moveShare, OPEN_SHARE_STATUSES } from '../domain/shares.js';
 
 export type WebhookDeps = {
   env: Env;
   db: Firestore;
   paypal: PayPalFetch;
 };
-
-const STATUSES = new Set<OrderStatus>([
-  'draft', 'link_sent', 'processing', 'pending', 'declined', 'paid', 'cancelled', 'expired',
-]);
 
 const SIGNATURE_HEADERS = [
   ['paypal-transmission-id', 'transmissionId'],
@@ -79,28 +71,6 @@ function safeIssue(value: string | undefined): string | null {
   return oneLine;
 }
 
-async function locateOrder(db: Firestore, event: PayPalEvent) {
-  const custom = parseCustomId(event.customId);
-  if (custom) {
-    const ref = db.doc(`organisers/${custom.organiserId}/orders/${custom.orderId}`);
-    const snap = await ref.get();
-    if (snap.exists) {
-      return { ref, order: snap.data() as OrderDoc, organiserId: custom.organiserId, orderId: custom.orderId };
-    }
-  }
-  if (!event.paypalOrderId) return null;
-  const found = await db
-    .collectionGroup('orders')
-    .where('paypalOrderId', '==', event.paypalOrderId)
-    .limit(1)
-    .get();
-  const doc = found.docs[0];
-  if (!doc) return null;
-  const organiserId = doc.ref.parent.parent?.id;
-  if (!organiserId) return null;
-  return { ref: doc.ref, order: doc.data() as OrderDoc, organiserId, orderId: doc.id };
-}
-
 async function recordPayment(
   ref: DocumentReference,
   event: PayPalEvent,
@@ -117,8 +87,8 @@ async function recordPayment(
     receivedAt: FieldValue.serverTimestamp(),
     processedAt: FieldValue.serverTimestamp(),
     processingError,
-    // Money landed on a link Split had already closed. The app shows it so
-    // the seller refunds it; the order itself does not move.
+    // Money landed on an order the share no longer holds (the expiry sweep
+    // replaced it). The organiser refunds it; the share does not move.
     ...(refundDue ? { refundDue: true } : {}),
   });
 }
@@ -201,8 +171,8 @@ export function webhooksRouter(deps: WebhookDeps): Router {
               eventType: event.eventType,
               receivedAt: snap.exists ? snap.get('receivedAt') : FieldValue.serverTimestamp(),
               handled: false,
-              organiserId: null,
-              orderId: null,
+              splitId: null,
+              participantId: null,
             },
             { merge: true },
           );
@@ -219,78 +189,56 @@ export function webhooksRouter(deps: WebhookDeps): Router {
           return;
         }
 
-        const located = await locateOrder(deps.db, event);
+        const located = await locateShare(
+          deps.db,
+          { customId: event.customId, paypalOrderId: event.paypalOrderId },
+          deps.paypal,
+        );
         if (!located) {
           await ledger.set(
-            { handled: true, processingError: 'No matching order.' },
+            { handled: true, processingError: 'No matching share.' },
             { merge: true },
           );
           res.json({ received: true });
           return;
         }
 
-        const { ref, order, organiserId, orderId } = located;
-        // A link replaced by an edit charges the old items, and a cancelled
-        // or expired order is closed, so nothing these do may move the order.
-        // Cancel and expiry put the order's own PayPal id on the superseded
-        // list too; the status check also covers orders closed before that.
-        // A capture here is real money and is flagged for refund.
-        const superseded = Boolean(
-          event.paypalOrderId && order.supersededPaypalOrderIds?.includes(event.paypalOrderId),
-        );
-        const closed = isClosed(order.status);
-        if (superseded || closed) {
+        const { ref, person } = located;
+        const where = { splitId: ref.parent.parent!.id, participantId: ref.id };
+        const paypalOrderId = event.paypalOrderId ?? person.paypalOrderId;
+        // An order the share no longer holds was replaced by the expiry sweep.
+        // Nothing on it may move the share; a capture on it is real money and
+        // is flagged for refund.
+        if (!paypalOrderId || paypalOrderId !== person.paypalOrderId) {
           const captured = event.eventType === 'PAYMENT.CAPTURE.COMPLETED';
-          const reason = closed
-            ? captured
-              ? `Captured after the order was ${order.status}. Refund it in PayPal.`
-              : `The order was ${order.status}. Ignored.`
-            : captured
-              ? 'Captured on a superseded PayPal order. Refund it in PayPal.'
-              : 'PayPal order was superseded by an edit. Ignored.';
+          const reason = captured
+            ? 'Captured on a replaced PayPal order. Refund it in PayPal.'
+            : 'PayPal order was replaced. Ignored.';
           console.warn(JSON.stringify({
-            source: closed ? 'paypal_closed' : 'paypal_superseded',
-            orderId, paypalOrderId: event.paypalOrderId, eventType: event.eventType,
+            source: 'paypal_superseded', ...where, paypalOrderId: event.paypalOrderId, eventType: event.eventType,
           }));
           await recordPayment(ref, event, reason, captured);
-          await ledger.set({ handled: true, organiserId, orderId, processingError: reason }, { merge: true });
+          await ledger.set({ handled: true, ...where, processingError: reason }, { merge: true });
           res.json({ received: true });
           return;
         }
-        const status = STATUSES.has(order.status) ? order.status : null;
-        let processingError: string | null = null;
-        const patch: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp() };
 
+        let processingError: string | null = null;
         if (event.eventType === 'CHECKOUT.ORDER.APPROVED') {
-          if (status && status !== 'paid' && status !== 'cancelled' && status !== 'expired') {
-            const outcome = await captureOrReconcile(deps.paypal, event.paypalOrderId ?? order.paypalOrderId, orderId);
-            if (outcome.captureId) patch.paypalCaptureId = outcome.captureId;
-            if (status !== outcome.interim) {
-              assertTransition(status, outcome.interim);
-              patch.status = outcome.interim;
-            }
+          // Usually the return page has already captured; this finds it done.
+          if (OPEN_SHARE_STATUSES.includes(person.status)) {
+            await reconcileShare(deps.paypal, ref, paypalOrderId, 'webhook');
           }
-        } else if (status) {
+        } else {
           const target = statusForEvent(event.eventType);
-          if (event.captureId) patch.paypalCaptureId = event.captureId;
-          if (target && target !== status) {
-            try {
-              assertTransition(status, target);
-              patch.status = target;
-              if (target === 'paid') patch.paidAt = FieldValue.serverTimestamp();
-            } catch (err) {
-              if (err instanceof ApiError && err.code === 'ORDER_STATE_INVALID') {
-                processingError = err.message;
-              } else {
-                throw err;
-              }
-            }
+          if (target) {
+            const out = await moveShare(ref, { to: target, paypalOrderId, captureId: event.captureId });
+            if (!out.moved && out.reason === 'invalid') processingError = out.message ?? null;
           }
         }
 
-        await ref.update(patch);
         await recordPayment(ref, event, processingError);
-        await ledger.set({ handled: true, organiserId, orderId }, { merge: true });
+        await ledger.set({ handled: true, ...where }, { merge: true });
         res.json({ received: true });
       } catch (err) {
         next(err);
@@ -299,23 +247,4 @@ export function webhooksRouter(deps: WebhookDeps): Router {
   );
 
   return router;
-}
-
-async function captureOrReconcile(
-  paypal: PayPalFetch,
-  paypalOrderId: string | null,
-  orderId: string,
-): Promise<{ interim: 'link_sent' | 'processing' | 'pending' | 'declined'; captureId: string | null }> {
-  if (!paypalOrderId) return { interim: 'link_sent', captureId: null };
-  try {
-    const captured = await capturePayPalOrder(paypal, paypalOrderId, orderId);
-    return interimFromPayPalOrder(captured);
-  } catch (err) {
-    const issue = paypalIssue(err);
-    if (issue === 'ORDER_ALREADY_CAPTURED') {
-      return interimFromPayPalOrder(await getPayPalOrder(paypal, paypalOrderId));
-    }
-    if (issue === 'INSTRUMENT_DECLINED') return { interim: 'declined', captureId: null };
-    throw err;
-  }
 }

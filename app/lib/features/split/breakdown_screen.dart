@@ -53,7 +53,7 @@ class _BreakdownScreenState extends ConsumerState<BreakdownScreen> {
     final people = ref.watch(participantsProvider(widget.splitId)).value ?? const <Participant>[];
     final computed = split?.computed;
     final ok = computed?.ok ?? false;
-    final locked = split?.status == 'collecting';
+    final locked = split?.status == 'collecting' || split?.status == 'settled';
 
     bool onUs(Participant p) => split?.rules.onUs.contains(p.id) ?? false;
     int share(Participant p) => computed?.perParticipant[p.id]?.finalMinor ?? 0;
@@ -126,7 +126,7 @@ class _BreakdownScreenState extends ConsumerState<BreakdownScreen> {
                             ? () => context.go('/split/${widget.splitId}')
                             : () => _run(() => ref.read(splitsApiProvider).lock(widget.splitId), then: '/split/${widget.splitId}'),
                   ),
-                  if (locked)
+                  if (locked && split?.status != 'settled')
                     TextButton(
                       onPressed: _busy ? null : () => _run(() => ref.read(splitsApiProvider).unlock(widget.splitId)),
                       child: const Text('Unlock to change something'),

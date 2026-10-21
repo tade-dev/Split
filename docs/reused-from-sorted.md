@@ -42,17 +42,17 @@ API 228 tests, Flutter 156 tests, `tsc --noEmit` and `flutter analyze` clean.
 | `src/domain/nudge.ts` | `src/domain/nudge.ts` | Adapt | None yet |
 | `src/domain/links.ts` | `src/domain/invoice.ts` | Adapt | HMAC sign, verify and URL only. The invoice page and invoice numbers are dropped |
 | `src/paypal/client.ts` | `src/paypal/client.ts` | Copy | |
-| `src/paypal/orders.ts` | `src/paypal/orders.ts` | Adapt | Brand name `Split`. Still takes an `OrderDoc` |
-| `src/paypal/events.ts` | `src/paypal/events.ts` | Adapt | None yet. `parseCustomId` is still two-part |
-| `src/paypal/reconcile.ts` | `src/paypal/reconcile.ts` | Adapt | None yet. Still operates on an order doc |
+| `src/paypal/orders.ts` | `src/paypal/orders.ts` | Adapt | Brand name `Split`. Generalised to `createPayPalOrder(ShareOrder)` (Week B Task 9) |
+| `src/paypal/events.ts` | `src/paypal/events.ts` | Adapt | Three-part `custom_id`; a COMPLETED capture is Paid (`captureOutcome`) (Week B Task 10) |
+| `src/paypal/reconcile.ts` | `src/paypal/reconcile.ts` | Adapt | `reconcileShare` and `locateShare` over participant docs (Week B Task 10) |
 | `src/paypal/buyer_page.ts` | `src/paypal/buyer_page.ts` | Adapt | Wordmark `Split` |
-| `src/routes/webhooks.ts` | `src/routes/webhooks.ts` | Adapt | None yet. Still `locateOrder` |
-| `src/routes/paypal_pages.ts` | `src/routes/paypal_pages.ts` | Adapt | `/invoice/...` route and the return page's invoice link removed |
-| `src/routes/internal.ts` | `src/routes/internal.ts` | Adapt | None yet. Sweeps still walk `organisers/*/orders` |
+| `src/routes/webhooks.ts` | `src/routes/webhooks.ts` | Adapt | `locateShare`; ledger and idempotency unchanged (Week B Task 10) |
+| `src/routes/paypal_pages.ts` | `src/routes/paypal_pages.ts` | Adapt | `/invoice/...` route removed. The return page captures and redirects to the friend's page (Week B Task 10) |
+| `src/routes/internal.ts` | `src/routes/internal.ts` | Adapt | `reconcile` and `expire-sweep` walk shares in collecting splits (Week B Task 10). `nudge-sweep` still walks `organisers/*/orders` until Week C |
 | `src/routes/health.ts` | `src/routes/health.ts` | Adapt | None |
-| `src/domain/orders.ts` | `src/domain/orders.ts` | Transitional | Trimmed to `OrderStatus`, `OrderDoc` (with a minimal `OrderLine`) and `assertTransition` |
-| `src/domain/closing.ts` | `src/domain/closing.ts` | Transitional | Unchanged. Used by `webhooks.ts` and `internal.ts` |
-| `src/domain/dates.ts` | `src/domain/dates.ts` | Transitional | Unchanged. Used by `draft_nudge.ts` |
+| `src/domain/orders.ts` | (deleted) | Transitional | Retired in Week B. `assertShareTransition` in `domain/shares.ts` replaces `assertTransition`; the nudge's order shape is `NudgeOrder` in `domain/nudge.ts` |
+| `src/domain/closing.ts` | (deleted) | Transitional | Retired in Week B. The expiry sweep replaces a share's order instead of closing anything (plan E8) |
+| `src/domain/dates.ts` | (deleted) | Transitional | Retired in Week B. Its two helpers moved into `draft_nudge.ts`, their only user |
 | `src/ai/schemas.ts` | `src/ai/schemas.ts` | Transitional | Trimmed to `ambiguitySchema` (Split reuses the shape) and `nudgeDraftSchema` |
 | `package.json`, `package-lock.json` | same | Adapt | Name `split-api`, description. Dependency versions identical |
 | `tsconfig.json`, `vitest.config.ts` | same | Copy | |
@@ -71,7 +71,7 @@ fake-PayPal style.
 | `test/auth.test.ts`, `cors.test.ts`, `env.test.ts`, `firebase.test.ts`, `health.test.ts`, `image-type.test.ts`, `money.test.ts` | same | |
 | `test/draft-nudge.test.ts`, `nudge-domain.test.ts` | same | |
 | `test/paypal-client.test.ts`, `paypal-events.test.ts`, `paypal-orders.test.ts`, `paypal-orders.live.test.ts` | same | |
-| `test/paypal-buyer.test.ts`, `webhooks.test.ts`, `expire-sweep.test.ts` | same | Emulator |
+| `test/paypal-buyer.test.ts` (now `paid-return.test.ts`), `webhooks.test.ts`, `expire-sweep.test.ts` | ported to shares | Emulator |
 | `test/firestore-rules.test.ts` | same | Emulator. Paths `sellers/` → `organisers/` |
 | `test/links.test.ts` | `test/invoice.test.ts` | Signature cases only. The invoice-page and invoice-route cases went with the page |
 
@@ -137,10 +137,10 @@ one is picked up:
 | `scan_screen.dart` for receipts: one or two photos, "long bill? snap it in two parts" | 1, Foundations and money |
 | `env.ts`: add `LINK_SECRET` | Week B |
 | `links.ts`: sign `organiserId:splitId:participantId` with `LINK_SECRET` | Week B |
-| `orders.ts`: generalised `createPayPalOrder({ referenceId, customId, amountMinor, ... })` | Week B |
-| `events.ts`: three-part `custom_id` | Week B |
-| `reconcile.ts`, `webhooks.ts` (`locateShare`), `internal.ts`: participant docs | Week B. The transitional files go then |
-| `paypal_pages.ts`: return page links back to the friend's page | Week B |
+| `orders.ts`: generalised `createPayPalOrder({ referenceId, customId, amountMinor, ... })` | Week B. Done (Task 9) |
+| `events.ts`: three-part `custom_id` | Week B. Done (Task 10) |
+| `reconcile.ts`, `webhooks.ts` (`locateShare`), `internal.ts`: participant docs | Week B. Done (Task 10), and the transitional files are gone |
+| `paypal_pages.ts`: return page links back to the friend's page | Week B. Done (Task 10): it redirects there |
 | `buyer_page.ts`: shared layout for every friend page | Week B |
 | `draft_nudge.ts`, `nudge.ts`: nudge a friend | Week C |
 | `ShareStatusPill` participant statuses | Week B (Tracker) |

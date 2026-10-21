@@ -2,11 +2,17 @@
   "indexes": [],
   "fieldOverrides": [
     {
-      "collectionGroup": "orders",
+      "collectionGroup": "participants",
       "fieldPath": "paypalOrderId",
       "indexes": [
-        { "order": "ASCENDING", "queryScope": "COLLECTION" },
-        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
       ]
     }
   ]
