@@ -109,6 +109,13 @@ Split builds on, is `tade-dev/sorted` `docs/verified-facts.md` at `902dc25`.
   `gpt-5.4-mini`'s miss was caught by the add-up check, as designed, but it
   would block the organiser on every long bill.
 
+- **Claim parsing (§7.2) on `gpt-5.5`, 2026-10-21.** `parse-claim.live.test.ts`
+  passed 3/3 against the demo bill: "spicy ramen, a lager and one of the bao"
+  matched all three lines for Josh (3.3s); "Josh and Amaka shared the prawn
+  crackers" gave weight 1 each from the organiser and only Josh's from Josh,
+  with Amaka's in `ignored` (8.4s); "the ramen" asked instead of guessing
+  between three ramens (3.2s).
+
 ## Still unverified
 
 - How often the sweeps really run. Scheduled runs started firing on

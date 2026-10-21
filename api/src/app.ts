@@ -14,6 +14,7 @@ import { sessionRouter } from './routes/session.js';
 import { splitsRouter } from './routes/splits.js';
 import { participantsRouter } from './routes/participants.js';
 import { friendRouter } from './routes/friend.js';
+import { claimsRouter } from './routes/claims.js';
 
 export type AppDeps = {
   env: Env;
@@ -59,7 +60,11 @@ export function createApp(deps: AppDeps): express.Express {
     '/v1',
     splitsRouter({ db: deps.db, verify: deps.verify, transport: deps.transport, model: deps.env.OPENAI_VISION_MODEL }),
   );
-  app.use('/v1', friendRouter({ env: deps.env, db: deps.db }));
+  app.use('/v1', friendRouter({ env: deps.env, db: deps.db, transport: deps.transport, model: deps.env.OPENAI_VISION_MODEL }));
+  app.use(
+    '/v1',
+    claimsRouter({ db: deps.db, verify: deps.verify, transport: deps.transport, model: deps.env.OPENAI_VISION_MODEL }),
+  );
   app.use('/v1', participantsRouter({ env: deps.env, db: deps.db, verify: deps.verify }));
   app.use(
     '/v1',

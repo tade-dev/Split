@@ -46,9 +46,10 @@ export function remainingUnits(line: ReceiptLine, lineClaims: LineClaims | undef
  * Replaces one participant's claims. Pure: it returns the new claims map or
  * the problems, and never touches the input.
  *
- * A weight above 1 has to fit in what is left on the line ("I had 2 lagers"
- * when 1 is left is a mistake). A weight of 1 is always allowed, even on a
- * fully claimed line, because that is how people share a single dish.
+ * A claim has to fit in what is left on the line: "2 lagers" when 1 is left
+ * is a mistake, and two friends racing for the last lager cannot both have
+ * it. The one exception is a single dish (qty 1), which anyone may join,
+ * because that is how people share the prawn crackers.
  */
 export function applyClaims(
   current: Record<string, LineClaims>,
@@ -82,7 +83,7 @@ export function applyClaims(
   for (const [lineId, weight] of wanted) {
     const line = byId.get(lineId)!;
     const left = remainingUnits(line, current[lineId], incoming.participantId);
-    if (weight > 1 && weight > left) {
+    if (!fitsLine(line, weight, left)) {
       problems.push(problem(`claims.${lineId}`, 'qty_unclear', leftCopy(line, left)));
     }
   }
@@ -107,8 +108,29 @@ export function applyClaims(
   return { ok: true, claims: next };
 }
 
+/** Spec §7.2: no unit claimed twice, except a single dish people share. */
+export function fitsLine(line: ReceiptLine, weight: number, left: number): boolean {
+  return line.qty === 1 ? weight === 1 : weight <= left;
+}
+
+/**
+ * Sets one person's weight on one line, leaving their other lines alone.
+ * The organiser's claim chat ("Josh had the lager") works line by line.
+ */
+export function setLineClaim(
+  current: Record<string, LineClaims>,
+  lineId: string,
+  participantId: string,
+  weight: number,
+  source: Claim['source'],
+): Record<string, LineClaims> {
+  const entry = current[lineId] ?? { claims: [], shared: false };
+  const kept = entry.claims.filter((c) => c.participantId !== participantId);
+  return { ...current, [lineId]: { ...entry, claims: weight > 0 ? [...kept, { participantId, weight, source }] : kept } };
+}
+
 /** "Only 1 lager is left to claim". */
-function leftCopy(line: ReceiptLine, left: number): string {
+export function leftCopy(line: ReceiptLine, left: number): string {
   const name = line.name.toLowerCase();
   if (left === 0) return `All of the ${name} has been claimed`;
   return left === 1 ? `Only 1 ${name} is left to claim` : `Only ${left} ${name} are left to claim`;
