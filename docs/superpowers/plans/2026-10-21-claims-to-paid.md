@@ -307,6 +307,8 @@ Spec §5's week-1 check. It decides E10, so it comes first.
 
 **Files:** `paypal/events.ts`, `paypal/reconcile.ts`, `routes/{paypal_pages,webhooks,internal}.ts`, `domain/lock.ts` (`settleIfDone`), and tests. **Delete** `domain/{orders,closing,dates}.ts`.
 
+**Seen in the payee spike (2026-10-21):** `GET /v1/paypal/return` logged `paypal return lookup failed` because its `collectionGroup('orders').where('paypalOrderId', ...)` query throws, most likely because no collection-group index exists. Look up the order by its path (from `custom_id` or the order id) instead, or add a `fieldOverrides` entry in `firestore.indexes.json` and wire it into `firebase.json`. Either way, cover it with an emulator test.
+
 - [ ] **Step 1: `parseCustomId`** returns `{ organiserId, splitId, participantId }`, and anything not in three parts gives `null`. Test both.
 - [ ] **Step 2: Participant transitions.** A small `assertShareTransition(from, to)` replaces `orders.ts`'s `assertTransition`:
   - `owes`/`link_opened` → `processing` | `pending` | `declined` | `paid`
