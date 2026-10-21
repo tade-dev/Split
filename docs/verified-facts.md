@@ -34,6 +34,15 @@ Split builds on, is `tade-dev/sorted` `docs/verified-facts.md` at `902dc25`.
   `{"scanned":0,"nudged":0,"skipped":0}`. **No scheduled run had fired by
   20:38 UTC**, three hours later; see *Still unverified*.
 
+- **A faster reconcile trigger exists (2026-10-21, plan Task 12 / E9).** Tade
+  created an external cron job at about 23:11 UTC that POSTs
+  `/v1/internal/workflows/reconcile` with `X-Internal-Token`. GitHub Actions'
+  `sweeps.yml` stays as the hourly backstop. **Its first runs are not yet
+  recorded**: each should return HTTP 200 with
+  `{"checked":…,"promoted":…,"failed":…}`. A 401 means the token does not
+  match Render's `INTERNAL_TOKEN`. Capture on return (Week B Task 10) is the
+  primary path to Paid, so this is only a safety net.
+
 - **Render is on `starter` (2026-10-21).** It started on `plan: free` on
   2026-10-20, because `starter` needs a payment method before the Blueprint
   will create. Tade moved the service to `starter` before PayPal payments go
