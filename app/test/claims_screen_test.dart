@@ -80,6 +80,9 @@ class _Api implements SplitsApi {
   Future<SplitDoc> patchReceipt(String splitId, Map<String, Object?> body) => throw UnimplementedError();
   @override
   Future<SplitDoc> patchRules(String splitId, Map<String, Object?> body) => throw UnimplementedError();
+
+  @override
+  Future<RulesPreview> rulesMessage(String splitId, String message) => throw UnimplementedError();
 }
 
 late _Api _api;
