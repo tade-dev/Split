@@ -1,3 +1,4 @@
+import { FieldValue, type DocumentReference, type Transaction } from 'firebase-admin/firestore';
 import type { Ambiguity } from '../ai/schemas.js';
 import type { Breakdown } from './split.js';
 import { computeFor, type ParticipantDoc, type ParticipantStatus, type SplitDoc } from './splits.js';
@@ -27,4 +28,30 @@ export function lockPlan(split: Pick<SplitDoc, 'receipt' | 'claims' | 'rules'>, 
 /** Where a participant goes back to when the organiser unlocks. */
 export function unlockedStatus(p: ParticipantDoc): ParticipantStatus {
   return p.claimedAt ? 'claimed' : 'invited';
+}
+
+/** Shares that need nothing more. A split whose shares all are is settled. */
+export const SETTLED_STATUSES: readonly ParticipantStatus[] = ['paid', 'paid_cash', 'on_us'];
+
+/**
+ * Marks the split settled if this change leaves every share done (plan
+ * Task 10). Reads every participant inside the caller's transaction, before
+ * any of its writes, so two captures landing together cannot both miss the
+ * last share or both write `settled`: the later one retries, sees the split
+ * already settled, and writes nothing. Returns whether this call settled it.
+ */
+export async function settleIfDone(
+  tx: Transaction,
+  splitRef: DocumentReference,
+  change: { participantId: string; status: ParticipantStatus },
+): Promise<boolean> {
+  const [split, people] = await Promise.all([tx.get(splitRef), tx.get(splitRef.collection('participants'))]);
+  if (!split.exists || split.get('status') !== 'collecting' || people.empty) return false;
+  const done = people.docs.every((doc) => {
+    const status = doc.id === change.participantId ? change.status : (doc.get('status') as ParticipantStatus);
+    return SETTLED_STATUSES.includes(status);
+  });
+  if (!done) return false;
+  tx.update(splitRef, { status: 'settled', settledAt: FieldValue.serverTimestamp() });
+  return true;
 }

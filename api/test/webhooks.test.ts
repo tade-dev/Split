@@ -7,7 +7,7 @@ import { createApp } from '../src/app.js';
 import { loadEnv } from '../src/env.js';
 import { ApiError } from '../src/lib/errors.js';
 import type { PayPalFetch } from '../src/paypal/client.js';
-import type { OrderStatus } from '../src/domain/orders.js';
+import { order, person, seedCollecting, splitStatus, statusOf } from './shares-fixture.js';
 
 process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
 process.env.METADATA_SERVER_DETECTION = 'none';
@@ -43,19 +43,8 @@ function paypal(opts: { verified?: boolean; captureStatus?: string } = {}): { fe
     if (path.includes('verify-webhook-signature')) {
       return { verification_status: opts.verified === false ? 'FAILURE' : 'SUCCESS' };
     }
-    if (path.endsWith('/capture')) {
-      const status = opts.captureStatus ?? 'COMPLETED';
-      return {
-        id: 'PP-1',
-        status,
-        purchase_units: [{ payments: { captures: [{ id: 'CAP-1', status }] } }],
-      };
-    }
-    return {
-      id: 'PP-1',
-      status: 'COMPLETED',
-      purchase_units: [{ payments: { captures: [{ id: 'CAP-1', status: 'COMPLETED' }] } }],
-    };
+    if (path.endsWith('/capture')) return order('PPDAN', 'COMPLETED', opts.captureStatus ?? 'COMPLETED');
+    return order('PPDAN', 'APPROVED');
   };
   return { fetch, calls };
 }
@@ -73,26 +62,27 @@ function event(eventType: string, id: string, resource: unknown): string {
 }
 
 const approved = () => event('CHECKOUT.ORDER.APPROVED', 'WH-APPROVED', {
-  id: 'PP-1',
-  purchase_units: [{ custom_id: 'organiser-a:o1' }],
+  id: 'PPDAN',
+  purchase_units: [{ custom_id: 'kemi:s1:dan' }],
 });
 
-async function seed(status: OrderStatus = 'link_sent') {
-  await db.doc('organisers/organiser-a/orders/o1').set({
-    id: 'o1',
-    status,
-    buyerName: 'Tade',
-    paypalOrderId: 'PP-1',
-    approvalUrl: 'https://www.sandbox.paypal.com/checkoutnow?token=PP-1',
-    amountDueMinor: 4200,
-  });
-}
+const capture = (eventType: string, id: string, status: string, extra: Record<string, unknown> = {}) => event(eventType, id, {
+  id: 'CAP-1',
+  status,
+  custom_id: 'kemi:s1:dan',
+  amount: { currency_code: 'GBP', value: '39.23' },
+  supplementary_data: { related_ids: { order_id: 'PPDAN' } },
+  ...extra,
+});
 
 async function post(app: ReturnType<typeof appWith>, raw: string) {
   const req = request(app).post('/v1/webhooks/paypal').set('Content-Type', 'application/json');
   for (const [name, value] of Object.entries(HEADERS)) req.set(name, value);
   return req.send(raw);
 }
+
+const seed = (dan: Record<string, unknown> = {}) => seedCollecting(db, { dan });
+const ledgerRow = (id: string) => person(db, 'dan').collection('paymentEvents').doc(id).get();
 
 beforeEach(async () => {
   const organisers = await db.collection('organisers').listDocuments();
@@ -111,31 +101,41 @@ describe('POST /v1/webhooks/paypal', () => {
 
     expect(res.status).toBe(401);
     expect(calls.some((c) => c.path.endsWith('/capture'))).toBe(false);
-    const stored = await db.doc('organisers/organiser-a/orders/o1').get();
-    expect(stored.get('status')).toBe('link_sent');
+    expect(await statusOf(db, 'dan')).toBe('link_opened');
     const ledger = await db.collection('webhookEvents').get();
     expect(ledger.empty).toBe(true);
     const after = await request(appWith(fetch)).get('/v1/health');
     expect(after.body.webhookFailures).toBe(before.body.webhookFailures + 1);
   });
 
-  it('captures an approved order and does not mark it paid', async () => {
+  it('captures an approved order and marks the share paid', async () => {
     await seed();
     const { fetch, calls } = paypal();
     const raw = approved();
     const res = await post(appWith(fetch), raw);
 
     expect(res.status).toBe(200);
-    const capture = calls.find((c) => c.path.endsWith('/capture'));
-    expect(capture?.path).toBe('/v2/checkout/orders/PP-1/capture');
-    expect(capture?.requestId).toBe('capture-o1');
+    const captured = calls.find((c) => c.path.endsWith('/capture'));
+    expect(captured?.path).toBe('/v2/checkout/orders/PPDAN/capture');
+    expect(captured?.requestId).toBe('capture-dan-PPDAN');
     const verify = calls.find((c) => c.path.includes('verify-webhook-signature'));
     expect(verify?.rawBody).toContain(`"webhook_event":${raw}`);
 
-    const stored = await db.doc('organisers/organiser-a/orders/o1').get();
-    expect(stored.get('status')).toBe('processing');
-    expect(stored.get('paypalCaptureId')).toBe('CAP-1');
-    expect(stored.get('paidAt')).toBeUndefined();
+    const dan = await person(db, 'dan').get();
+    expect(dan.get('status')).toBe('paid');
+    expect(dan.get('paypalCaptureId')).toBe('CAP-PPDAN');
+    const ledger = await db.doc('webhookEvents/WH-APPROVED').get();
+    expect(ledger.get('handled')).toBe(true);
+    expect(ledger.get('splitId')).toBe('s1');
+    expect(ledger.get('participantId')).toBe('dan');
+  });
+
+  it('finds an approval the return page already captured, and changes nothing', async () => {
+    await seed({ status: 'paid', paypalCaptureId: 'CAP-PPDAN' });
+    const { fetch, calls } = paypal();
+    expect((await post(appWith(fetch), approved())).status).toBe(200);
+    expect(calls.some((c) => c.path.endsWith('/capture'))).toBe(false);
+    expect(await statusOf(db, 'dan')).toBe('paid');
   });
 
   it('ignores a duplicate event', async () => {
@@ -145,93 +145,91 @@ describe('POST /v1/webhooks/paypal', () => {
     const raw = approved();
 
     expect((await post(app, raw)).status).toBe(200);
+    await person(db, 'dan').update({ status: 'link_opened' });
     expect((await post(app, raw)).status).toBe(200);
     expect(calls.filter((c) => c.path.endsWith('/capture'))).toHaveLength(1);
-    const stored = await db.doc('organisers/organiser-a/orders/o1').get();
-    expect(stored.get('status')).toBe('processing');
   });
 
-  it('marks the order paid only when the capture completes', async () => {
-    await seed('processing');
+  it('marks the share paid when the capture completes, and settles the split on the last one', async () => {
+    await seedCollecting(db, { dan: { status: 'processing' }, josh: { status: 'paid' } });
     const { fetch, calls } = paypal();
-    const res = await post(appWith(fetch), event('PAYMENT.CAPTURE.COMPLETED', 'WH-PAID', {
-      id: 'CAP-1',
-      status: 'COMPLETED',
-      custom_id: 'organiser-a:o1',
-      amount: { currency_code: 'GBP', value: '42.00' },
-      supplementary_data: { related_ids: { order_id: 'PP-1' } },
-    }));
+    const res = await post(appWith(fetch), capture('PAYMENT.CAPTURE.COMPLETED', 'WH-PAID', 'COMPLETED'));
 
     expect(res.status).toBe(200);
     expect(calls.some((c) => c.path.endsWith('/capture'))).toBe(false);
-    const stored = await db.doc('organisers/organiser-a/orders/o1').get();
-    expect(stored.get('status')).toBe('paid');
-    expect(stored.get('paypalCaptureId')).toBe('CAP-1');
-    expect(stored.get('paidAt')).toBeTruthy();
-    const payment = await db.doc('organisers/organiser-a/orders/o1/paymentEvents/WH-PAID').get();
-    expect(payment.get('amountMinor')).toBe(4200);
+    const dan = await person(db, 'dan').get();
+    expect(dan.get('status')).toBe('paid');
+    expect(dan.get('paypalCaptureId')).toBe('CAP-1');
+    expect(dan.get('paidAt')).toBeTruthy();
+    expect(await splitStatus(db)).toBe('settled');
+    const payment = await ledgerRow('WH-PAID');
+    expect(payment.get('amountMinor')).toBe(3923);
     expect(payment.get('signatureVerified')).toBe(true);
   });
 
-  it('finds the order by the stored PayPal id when custom_id is absent', async () => {
-    await seed('processing');
+  it('finds the share by the stored PayPal id when custom_id is absent', async () => {
+    await seed({ status: 'processing' });
     const { fetch } = paypal();
-    const res = await post(appWith(fetch), event('PAYMENT.CAPTURE.COMPLETED', 'WH-LOOKUP', {
-      id: 'CAP-9',
-      status: 'COMPLETED',
-      supplementary_data: { related_ids: { order_id: 'PP-1' } },
-    }));
+    const res = await post(appWith(fetch), capture('PAYMENT.CAPTURE.COMPLETED', 'WH-LOOKUP', 'COMPLETED', { custom_id: undefined }));
     expect(res.status).toBe(200);
-    const stored = await db.doc('organisers/organiser-a/orders/o1').get();
-    expect(stored.get('status')).toBe('paid');
+    expect(await statusOf(db, 'dan')).toBe('paid');
+  });
+
+  it('records an event for no known share as handled', async () => {
+    const { fetch } = paypal();
+    const fetchNothing: PayPalFetch = async (path, init) => (path.includes('verify') ? fetch(path, init) : { id: 'X', purchase_units: [{}] });
+    const res = await post(appWith(fetchNothing), capture('PAYMENT.CAPTURE.COMPLETED', 'WH-NOBODY', 'COMPLETED', { custom_id: 'kemi:s1:nobody' }));
+    expect(res.status).toBe(200);
+    const ledger = await db.doc('webhookEvents/WH-NOBODY').get();
+    expect(ledger.get('handled')).toBe(true);
+    expect(ledger.get('processingError')).toBe('No matching share.');
   });
 
   it('shows pending without leaving the payment unpaid', async () => {
     await seed();
     const { fetch } = paypal();
-    const res = await post(appWith(fetch), event('PAYMENT.CAPTURE.PENDING', 'WH-PENDING', {
-      id: 'CAP-1',
-      status: 'PENDING',
-      custom_id: 'organiser-a:o1',
-    }));
+    const res = await post(appWith(fetch), capture('PAYMENT.CAPTURE.PENDING', 'WH-PENDING', 'PENDING'));
     expect(res.status).toBe(200);
-    const stored = await db.doc('organisers/organiser-a/orders/o1').get();
-    expect(stored.get('status')).toBe('pending');
+    expect(await statusOf(db, 'dan')).toBe('pending');
   });
 
-  it('records a denied capture as a failed payment', async () => {
+  it('records a denied capture as declined and keeps the link', async () => {
     await seed();
     const { fetch } = paypal();
-    const res = await post(appWith(fetch), event('PAYMENT.CAPTURE.DENIED', 'WH-DENIED', {
-      id: 'CAP-1',
-      status: 'DENIED',
-      custom_id: 'organiser-a:o1',
-    }));
+    const res = await post(appWith(fetch), capture('PAYMENT.CAPTURE.DENIED', 'WH-DENIED', 'DENIED'));
     expect(res.status).toBe(200);
-    const stored = await db.doc('organisers/organiser-a/orders/o1').get();
-    expect(stored.get('status')).toBe('declined');
-    expect(stored.get('approvalUrl')).toContain('checkoutnow');
+    const dan = await person(db, 'dan').get();
+    expect(dan.get('status')).toBe('declined');
+    expect(dan.get('approvalUrl')).toContain('checkoutnow');
   });
 
-  it('sends a reversed approval back to unpaid and keeps the link', async () => {
-    await seed('processing');
+  it('sends a reversed approval back to owes and keeps the link', async () => {
+    await seed({ status: 'processing' });
     const { fetch } = paypal();
     const res = await post(appWith(fetch), event('CHECKOUT.PAYMENT-APPROVAL.REVERSED', 'WH-REV', {
-      id: 'PP-1',
-      purchase_units: [{ custom_id: 'organiser-a:o1' }],
+      id: 'PPDAN',
+      purchase_units: [{ custom_id: 'kemi:s1:dan' }],
     }));
     expect(res.status).toBe(200);
-    const stored = await db.doc('organisers/organiser-a/orders/o1').get();
-    expect(stored.get('status')).toBe('link_sent');
-    expect(stored.get('approvalUrl')).toContain('checkoutnow');
+    const dan = await person(db, 'dan').get();
+    expect(dan.get('status')).toBe('owes');
+    expect(dan.get('approvalUrl')).toContain('checkoutnow');
+  });
+
+  it('never moves a paid share, and notes why', async () => {
+    await seed({ status: 'paid' });
+    const { fetch } = paypal();
+    await post(appWith(fetch), capture('PAYMENT.CAPTURE.DENIED', 'WH-LATE-DENY', 'DENIED'));
+    expect(await statusOf(db, 'dan')).toBe('paid');
+    expect((await ledgerRow('WH-LATE-DENY')).get('processingError')).toBe('A share that is paid cannot become declined.');
   });
 
   it('posts a documented capture event back exactly, charset and all', async () => {
-    await seed('link_sent');
+    await seed();
     const { fetch, calls } = paypal();
     // Field order matches PayPal's published PAYMENT.CAPTURE.COMPLETED example.
     // Re-stringifying it would move "id" ahead of "amount".
-    const raw = '{"id":"WH-3F562076HD293871E-75F399086E414290U","event_version":"1.0","create_time":"2024-05-16T05:19:19.355Z","resource_type":"capture","resource_version":"2.0","event_type":"PAYMENT.CAPTURE.COMPLETED","summary":"Payment completed for GBP 42.00","resource":{"amount":{"value":"42.00","currency_code":"GBP"},"custom_id":"organiser-a:o1","supplementary_data":{"related_ids":{"order_id":"PP-1"}},"id":"CAP-1","status":"COMPLETED"}}';
+    const raw = '{"id":"WH-3F562076HD293871E-75F399086E414290U","event_version":"1.0","create_time":"2024-05-16T05:19:19.355Z","resource_type":"capture","resource_version":"2.0","event_type":"PAYMENT.CAPTURE.COMPLETED","summary":"Payment completed for GBP 39.23","resource":{"amount":{"value":"39.23","currency_code":"GBP"},"custom_id":"kemi:s1:dan","supplementary_data":{"related_ids":{"order_id":"PPDAN"}},"id":"CAP-1","status":"COMPLETED"}}';
     const req = request(appWith(fetch))
       .post('/v1/webhooks/paypal')
       .set('Content-Type', 'application/json; charset=utf-8');
@@ -241,10 +239,8 @@ describe('POST /v1/webhooks/paypal', () => {
     expect(res.status).toBe(200);
     const verify = calls.find((c) => c.path.includes('verify-webhook-signature'));
     expect(verify?.rawBody).toContain(`"webhook_event":${raw}`);
-    const stored = await db.doc('organisers/organiser-a/orders/o1').get();
-    expect(stored.get('status')).toBe('paid');
+    expect(await statusOf(db, 'dan')).toBe('paid');
   });
-
   it('logs a rejected verification status without the signature', async () => {
     await seed();
     const { fetch } = paypal({ verified: false });
@@ -298,121 +294,42 @@ describe('POST /v1/webhooks/paypal', () => {
     expect(logged).not.toContain('paypal-transmission-sig');
   });
 
-  it('records a refund without moving a paid order', async () => {
-    await seed('paid');
+  it('records a refund without moving a paid share', async () => {
+    await seed({ status: 'paid' });
     const { fetch } = paypal();
-    const res = await post(appWith(fetch), event('PAYMENT.CAPTURE.REFUNDED', 'WH-REFUND', {
-      id: 'CAP-1',
-      status: 'REFUNDED',
-      custom_id: 'organiser-a:o1',
-      amount: { value: '42.00' },
-    }));
+    const res = await post(appWith(fetch), capture('PAYMENT.CAPTURE.REFUNDED', 'WH-REFUND', 'REFUNDED'));
     expect(res.status).toBe(200);
-    const stored = await db.doc('organisers/organiser-a/orders/o1').get();
-    expect(stored.get('status')).toBe('paid');
-    const payment = await db.doc('organisers/organiser-a/orders/o1/paymentEvents/WH-REFUND').get();
-    expect(payment.exists).toBe(true);
+    expect(await statusOf(db, 'dan')).toBe('paid');
+    expect((await ledgerRow('WH-REFUND')).exists).toBe(true);
   });
 
-  describe('a PayPal order superseded by an edit', () => {
-    async function seedSuperseded() {
-      await db.doc('organisers/organiser-a/orders/o1').set({
-        id: 'o1', status: 'draft', buyerName: 'Tade',
-        paypalOrderId: null, approvalUrl: null, amountDueMinor: 2800,
-        supersededPaypalOrderIds: ['PP-1'],
-      });
-    }
+  describe('an order the expiry sweep replaced', () => {
+    const replaced = () => seed({ status: 'owes', paypalOrderId: 'PPNEW', approvalUrl: 'https://www.sandbox.paypal.com/checkoutnow?token=PPNEW', supersededPaypalOrderIds: ['PPDAN'] });
 
-    it('does not capture an approval on the old link', async () => {
-      await seedSuperseded();
+    it('does not capture an approval on the old order', async () => {
+      await replaced();
       const { fetch, calls } = paypal();
       const res = await post(appWith(fetch), approved());
       expect(res.status).toBe(200);
       expect(calls.some((c) => c.path.endsWith('/capture'))).toBe(false);
-      const stored = await db.doc('organisers/organiser-a/orders/o1').get();
-      expect(stored.get('status')).toBe('draft');
+      expect(await statusOf(db, 'dan')).toBe('owes');
       const ledger = await db.doc('webhookEvents/WH-APPROVED').get();
       expect(ledger.get('handled')).toBe(true);
-      expect(ledger.get('processingError')).toMatch(/superseded/);
+      expect(ledger.get('processingError')).toMatch(/replaced/);
+      expect((await ledgerRow('WH-APPROVED')).get('refundDue')).toBeUndefined();
     });
 
-    it('never marks the order paid from a capture on the old link', async () => {
-      await seedSuperseded();
+    it('never marks the share paid from a capture on the old order, and flags it for refund', async () => {
+      await replaced();
       const { fetch } = paypal();
-      const raw = event('PAYMENT.CAPTURE.COMPLETED', 'WH-OLDCAP', {
-        id: 'CAP-OLD', status: 'COMPLETED',
-        amount: { currency_code: 'GBP', value: '42.00' },
-        custom_id: 'organiser-a:o1',
-        supplementary_data: { related_ids: { order_id: 'PP-1' } },
-      });
-      const res = await post(appWith(fetch), raw);
+      const res = await post(appWith(fetch), capture('PAYMENT.CAPTURE.COMPLETED', 'WH-OLDCAP', 'COMPLETED'));
       expect(res.status).toBe(200);
-      const stored = await db.doc('organisers/organiser-a/orders/o1').get();
-      expect(stored.get('status')).toBe('draft');
-      expect(stored.get('paypalCaptureId')).toBeUndefined();
-      const payment = await db.doc('organisers/organiser-a/orders/o1/paymentEvents/WH-OLDCAP').get();
+      const dan = await person(db, 'dan').get();
+      expect(dan.get('status')).toBe('owes');
+      expect(dan.get('paypalCaptureId')).toBeNull();
+      const payment = await ledgerRow('WH-OLDCAP');
+      expect(payment.get('refundDue')).toBe(true);
       expect(payment.get('processingError')).toMatch(/Refund/);
     });
-  });
-});
-
-describe('a late PayPal event on a closed order', () => {
-  const lateCapture = (id: string) => event('PAYMENT.CAPTURE.COMPLETED', id, {
-    id: 'CAP-LATE', status: 'COMPLETED',
-    amount: { currency_code: 'GBP', value: '42.00' },
-    custom_id: 'organiser-a:o1',
-    supplementary_data: { related_ids: { order_id: 'PP-1' } },
-  });
-
-  async function seedClosed(status: OrderStatus, superseded: boolean) {
-    await seed(status);
-    if (superseded) {
-      await db.doc('organisers/organiser-a/orders/o1').update({ supersededPaypalOrderIds: ['PP-1'] });
-    }
-  }
-
-  it.each([
-    ['cancelled', true],
-    ['expired', true],
-    ['cancelled', false],
-  ] as const)('keeps a %s order closed and flags the money for refund (superseded: %s)', async (status, superseded) => {
-    await seedClosed(status, superseded);
-    const { fetch } = paypal();
-    const res = await post(appWith(fetch), lateCapture('WH-LATE'));
-
-    expect(res.status).toBe(200);
-    const stored = await db.doc('organisers/organiser-a/orders/o1').get();
-    expect(stored.get('status')).toBe(status);
-    expect(stored.get('paidAt')).toBeUndefined();
-    expect(stored.get('paypalCaptureId')).toBeUndefined();
-    const payment = await db.doc('organisers/organiser-a/orders/o1/paymentEvents/WH-LATE').get();
-    expect(payment.get('refundDue')).toBe(true);
-    expect(payment.get('processingError')).toBe(`Captured after the order was ${status}. Refund it in PayPal.`);
-    const ledger = await db.doc('webhookEvents/WH-LATE').get();
-    expect(ledger.get('handled')).toBe(true);
-  });
-
-  it('does not capture an approval on a cancelled order', async () => {
-    await seedClosed('cancelled', true);
-    const { fetch, calls } = paypal();
-    const res = await post(appWith(fetch), approved());
-
-    expect(res.status).toBe(200);
-    expect(calls.some((c) => c.path.endsWith('/capture'))).toBe(false);
-    expect((await db.doc('organisers/organiser-a/orders/o1').get()).get('status')).toBe('cancelled');
-    const payment = await db.doc('organisers/organiser-a/orders/o1/paymentEvents/WH-APPROVED').get();
-    expect(payment.get('refundDue')).toBeUndefined();
-    expect(payment.get('processingError')).toBe('The order was cancelled. Ignored.');
-  });
-
-  it('does not let a denied capture reopen an expired order', async () => {
-    await seedClosed('expired', true);
-    const { fetch } = paypal();
-    const raw = event('PAYMENT.CAPTURE.DENIED', 'WH-DENIED-LATE', {
-      id: 'CAP-X', status: 'DECLINED', custom_id: 'organiser-a:o1',
-      supplementary_data: { related_ids: { order_id: 'PP-1' } },
-    });
-    await post(appWith(fetch), raw);
-    expect((await db.doc('organisers/organiser-a/orders/o1').get()).get('status')).toBe('expired');
   });
 });

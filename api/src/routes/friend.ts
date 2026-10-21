@@ -296,7 +296,7 @@ export function friendRouter(deps: FriendDeps): Router {
         return { ...out, payeeEmail: (organiser.get('paypalEmail') as string | null | undefined) ?? null };
       });
       const { split, person } = read;
-      if (split.status !== 'collecting' || (person.status !== 'owes' && person.status !== 'link_opened')) {
+      if (split.status !== 'collecting' || !['owes', 'link_opened', 'declined'].includes(person.status)) {
         refuse('There is nothing to pay on this link right now.');
         return;
       }
@@ -328,7 +328,11 @@ export function friendRouter(deps: FriendDeps): Router {
         const fresh = await tx.get(ref);
         const stored = fresh.get('approvalUrl') as string | null;
         if (fresh.get('paypalOrderId') && stored) return stored;
-        tx.update(ref, { paypalOrderId: created.paypalOrderId, approvalUrl: created.approvalUrl });
+        tx.update(ref, {
+          paypalOrderId: created.paypalOrderId,
+          approvalUrl: created.approvalUrl,
+          paypalOrderCreatedAt: FieldValue.serverTimestamp(),
+        });
         return created.approvalUrl;
       });
       done(approvalUrl);

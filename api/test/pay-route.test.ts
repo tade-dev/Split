@@ -85,6 +85,19 @@ describe('POST /v1/s/.../pay', () => {
     });
     expect(unit).not.toHaveProperty('payee');
     expect((await person('dan').get()).data()).toMatchObject({ paypalOrderId: 'PP-ORDER-1', approvalUrl: created.links[0]!.href });
+    // The reconcile and expiry sweeps count from here.
+    expect((await person('dan').get()).get('paypalOrderCreatedAt')).toBeTruthy();
+  });
+
+  it('lets a friend whose card was declined try again on the same order', async () => {
+    const { path, person } = await locked();
+    const paypal = vi.fn<PayPalFetch>().mockResolvedValue(created);
+    await request(app(paypal)).post(`${path('dan')}/pay`).send({});
+    await person('dan').update({ status: 'declined' });
+    const again = await request(app(paypal)).post(`${path('dan')}/pay`).send({});
+    expect(again.status).toBe(200);
+    expect(again.body).toEqual({ approvalUrl: created.links[0]!.href });
+    expect(paypal).toHaveBeenCalledTimes(1);
   });
 
   it('reuses the order on a second tap without calling PayPal again', async () => {

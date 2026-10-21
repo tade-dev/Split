@@ -68,7 +68,7 @@ export function createApp(deps: AppDeps): express.Express {
   app.use('/v1', participantsRouter({ env: deps.env, db: deps.db, verify: deps.verify }));
   app.use(
     '/v1',
-    paypalPagesRouter(deps.db, deps.paypal),
+    paypalPagesRouter(deps.db, deps.env.LINK_SECRET, deps.paypal),
   );
   app.use(
     '/v1',

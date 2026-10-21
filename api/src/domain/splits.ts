@@ -41,6 +41,8 @@ export type ParticipantDoc = {
   shareMinor: number | null;
   paypalOrderId: string | null;
   approvalUrl: string | null;
+  /** When the current order was made: the reconcile and expiry sweeps count from it. */
+  paypalOrderCreatedAt?: Timestamp | null;
   paypalCaptureId: string | null;
   supersededPaypalOrderIds: string[];
   nudge: { count: number; lastSentAt: Timestamp | null; lastText: string | null; channel: string | null; snoozedUntil: Timestamp | null };
