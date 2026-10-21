@@ -11,7 +11,7 @@ const env = loadEnv({
   OPENAI_API_KEY: 'sk',
   OPENAI_VISION_MODEL: 'm',
   FIREBASE_PROJECT_ID: 'p',
-  INTERNAL_TOKEN: 't',
+  INTERNAL_TOKEN: 't', LINK_SECRET: 'link-secret',
 });
 
 // /v1/health touches neither Firestore nor the verifier, so both are stubs.
@@ -59,7 +59,7 @@ describe('GET /v1/health', () => {
       OPENAI_API_KEY: 'sk',
       OPENAI_VISION_MODEL: 'pending',
       FIREBASE_PROJECT_ID: 'p',
-      INTERNAL_TOKEN: 't',
+      INTERNAL_TOKEN: 't', LINK_SECRET: 'link-secret',
     });
     const res = await request(createApp({ ...deps, env: pendingEnv })).get('/v1/health');
     expect(res.body.config.placeholders).toEqual([

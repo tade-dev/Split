@@ -44,6 +44,15 @@ class _RecordingApi implements SplitsApi {
   }
 
   @override
+  Future<void> addPeople(String splitId, List<String> names) => throw UnimplementedError();
+
+  @override
+  Future<void> removePerson(String splitId, String participantId) => throw UnimplementedError();
+
+  @override
+  Future<OpenedSplit> open(String splitId) => throw UnimplementedError();
+
+  @override
   Future<SplitDoc> patchRules(String splitId, Map<String, Object?> body) async {
     rulesPatches.add(body);
     return _fixed;

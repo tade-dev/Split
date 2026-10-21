@@ -19,7 +19,7 @@ describe.skipIf(!ready)('generateStructured against the real model', () => {
     NODE_ENV: 'test',
     PAYPAL_CLIENT_ID: 'x', PAYPAL_CLIENT_SECRET: 'x', PAYPAL_WEBHOOK_ID: 'x',
     OPENAI_API_KEY: key!, OPENAI_VISION_MODEL: model!,
-    FIREBASE_PROJECT_ID: 'x', INTERNAL_TOKEN: 'x',
+    FIREBASE_PROJECT_ID: 'x', INTERNAL_TOKEN: 'x', LINK_SECRET: 'link-secret',
   });
 
   const schema = z.object({

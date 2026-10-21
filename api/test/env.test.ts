@@ -10,10 +10,19 @@ const valid = {
   OPENAI_API_KEY: 'sk-test',
   OPENAI_VISION_MODEL: 'gpt-test-vision',
   FIREBASE_PROJECT_ID: 'split-test',
-  INTERNAL_TOKEN: 'internal-secret',
+  INTERNAL_TOKEN: 'internal-secret', LINK_SECRET: 'link-secret',
 };
 
 describe('loadEnv', () => {
+  it('refuses a LINK_SECRET that is the INTERNAL_TOKEN', () => {
+    expect(() => loadEnv({ ...valid, LINK_SECRET: valid.INTERNAL_TOKEN })).toThrow(/LINK_SECRET \(must differ from INTERNAL_TOKEN\)/);
+  });
+
+  it('needs a LINK_SECRET', () => {
+    const { LINK_SECRET, ...rest } = valid;
+    expect(() => loadEnv(rest)).toThrow(/missing or empty: .*LINK_SECRET/);
+  });
+
   it('parses a complete environment', () => {
     const env = loadEnv(valid);
     expect(env.PORT).toBe(3000);

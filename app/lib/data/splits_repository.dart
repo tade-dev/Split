@@ -6,6 +6,10 @@ import '../models/split.dart';
 
 typedef Photo = ({List<int> bytes, String filename});
 
+/// What POST /v1/splits/:id/open returns: one signed link per friend and the
+/// text to paste in the group chat.
+typedef OpenedSplit = ({List<({String participantId, String name, String url})> links, String groupMessage});
+
 /// Every write to a split. Named so tests can fake it without Dio or a token.
 abstract class SplitsApi {
   /// POST /v1/splits/scan. 3-10 seconds: the Reading screen covers it.
@@ -19,6 +23,15 @@ abstract class SplitsApi {
 
   /// PATCH /v1/splits/:id/rules.
   Future<SplitDoc> patchRules(String splitId, Map<String, Object?> body);
+
+  /// POST /v1/splits/:id/participants. The new people arrive on the stream.
+  Future<void> addPeople(String splitId, List<String> names);
+
+  /// DELETE /v1/splits/:id/participants/:pid. Before lock only.
+  Future<void> removePerson(String splitId, String participantId);
+
+  /// POST /v1/splits/:id/open. Moves the split to claiming; safe to repeat.
+  Future<OpenedSplit> open(String splitId);
 }
 
 class HttpSplitsApi implements SplitsApi {
@@ -42,6 +55,26 @@ class HttpSplitsApi implements SplitsApi {
   @override
   Future<SplitDoc> patchRules(String splitId, Map<String, Object?> body) async =>
       _split(await _client.patchJson('/v1/splits/$splitId/rules', body));
+
+  @override
+  Future<void> addPeople(String splitId, List<String> names) =>
+      _client.postJson('/v1/splits/$splitId/participants', {'names': names});
+
+  @override
+  Future<void> removePerson(String splitId, String participantId) =>
+      _client.deleteJson('/v1/splits/$splitId/participants/$participantId');
+
+  @override
+  Future<OpenedSplit> open(String splitId) async {
+    final body = await _client.postJson('/v1/splits/$splitId/open', const <String, Object?>{});
+    return (
+      links: [
+        for (final l in (body['links'] as List).cast<Map<String, dynamic>>())
+          (participantId: l['participantId'] as String, name: l['name'] as String, url: l['url'] as String),
+      ],
+      groupMessage: body['groupMessage'] as String,
+    );
+  }
 }
 
 /// Reads go straight to Firestore so the screens update live; writes go

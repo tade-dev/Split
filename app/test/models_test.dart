@@ -82,4 +82,19 @@ void main() {
     final o = Organiser.fromJson({'id': 'kemi', 'displayName': 'Kemi', 'paypalEmail': null, 'demoSeeded': true});
     expect(o.displayName, 'Kemi');
   });
+
+  test("reads claims in Week B's shape and Week A's bare lists", () {
+    final split = SplitDoc.fromJson({
+      'id': 's1',
+      'claims': {
+        'lager-8': {
+          'claims': [{'participantId': 'josh', 'weight': 1, 'source': 'friend'}],
+          'shared': true,
+        },
+        'prawn-crackers-0': [{'participantId': 'kemi', 'weight': 1, 'source': 'ai'}],
+      },
+    });
+    expect(split.claims['lager-8'], const LineClaims(claims: [Claim(participantId: 'josh', source: 'friend')], shared: true));
+    expect(split.claims['prawn-crackers-0'], const LineClaims(claims: [Claim(participantId: 'kemi', source: 'ai')]));
+  });
 }

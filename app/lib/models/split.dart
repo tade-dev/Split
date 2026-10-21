@@ -18,6 +18,33 @@ abstract class Claim with _$Claim {
   factory Claim.fromJson(Map<String, dynamic> json) => _$ClaimFromJson(json);
 }
 
+/// Everything claimed on one line. `shared` is the organiser's "Share between
+/// …" answer to a line whose claims fall short of its quantity (spec Q1).
+@freezed
+abstract class LineClaims with _$LineClaims {
+  const factory LineClaims({
+    @Default(<Claim>[]) List<Claim> claims,
+    @Default(false) bool shared,
+  }) = _LineClaims;
+
+  factory LineClaims.fromJson(Map<String, dynamic> json) => _$LineClaimsFromJson(json);
+}
+
+/// Week A stored a bare list per line; Week B wraps it. Reads accept both, as
+/// the API's normaliseClaims does.
+Map<String, LineClaims> claimsFromJson(Object? json) {
+  if (json is! Map) return const {};
+  return {
+    for (final MapEntry(:key, :value) in json.entries)
+      key as String: value is List
+          ? LineClaims(claims: [for (final c in value) Claim.fromJson(Map<String, dynamic>.from(c as Map))])
+          : LineClaims.fromJson(Map<String, dynamic>.from(value as Map)),
+  };
+}
+
+Map<String, Object?> claimsToJson(Map<String, LineClaims> claims) =>
+    {for (final MapEntry(:key, :value) in claims.entries) key: value.toJson()};
+
 @freezed
 abstract class Rules with _$Rules {
   const factory Rules({
@@ -94,7 +121,9 @@ abstract class SplitDoc with _$SplitDoc {
     @Default('draft') String status,
     @Default(Receipt()) Receipt receipt,
     @Default(<Ambiguity>[]) List<Ambiguity> receiptAmbiguities,
-    @Default(<String, List<Claim>>{}) Map<String, List<Claim>> claims,
+    @JsonKey(fromJson: claimsFromJson, toJson: claimsToJson)
+    @Default(<String, LineClaims>{})
+    Map<String, LineClaims> claims,
     @Default(Rules()) Rules rules,
     @Default('') String organiserParticipantId,
     Computed? computed,

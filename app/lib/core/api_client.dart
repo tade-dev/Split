@@ -39,6 +39,11 @@ class ApiClient {
     return res.data ?? <String, dynamic>{};
   }
 
+  Future<Map<String, dynamic>> deleteJson(String path) async {
+    final res = await _dio.delete<Map<String, dynamic>>(path, options: await _authed());
+    return res.data ?? <String, dynamic>{};
+  }
+
   Future<Map<String, dynamic>> postImages(
     String path,
     List<({List<int> bytes, String filename})> files, {

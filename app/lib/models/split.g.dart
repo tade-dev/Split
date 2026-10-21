@@ -18,6 +18,21 @@ Map<String, dynamic> _$ClaimToJson(_Claim instance) => <String, dynamic>{
   'source': instance.source,
 };
 
+_LineClaims _$LineClaimsFromJson(Map<String, dynamic> json) => _LineClaims(
+  claims:
+      (json['claims'] as List<dynamic>?)
+          ?.map((e) => Claim.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <Claim>[],
+  shared: json['shared'] as bool? ?? false,
+);
+
+Map<String, dynamic> _$LineClaimsToJson(_LineClaims instance) =>
+    <String, dynamic>{
+      'claims': instance.claims.map((e) => e.toJson()).toList(),
+      'shared': instance.shared,
+    };
+
 _Rules _$RulesFromJson(Map<String, dynamic> json) => _Rules(
   serviceMode: json['serviceMode'] as String? ?? 'proportional',
   onUs:
@@ -117,16 +132,9 @@ _SplitDoc _$SplitDocFromJson(Map<String, dynamic> json) => _SplitDoc(
           ?.map((e) => Ambiguity.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const <Ambiguity>[],
-  claims:
-      (json['claims'] as Map<String, dynamic>?)?.map(
-        (k, e) => MapEntry(
-          k,
-          (e as List<dynamic>)
-              .map((e) => Claim.fromJson(e as Map<String, dynamic>))
-              .toList(),
-        ),
-      ) ??
-      const <String, List<Claim>>{},
+  claims: json['claims'] == null
+      ? const <String, LineClaims>{}
+      : claimsFromJson(json['claims']),
   rules: json['rules'] == null
       ? const Rules()
       : Rules.fromJson(json['rules'] as Map<String, dynamic>),
@@ -148,9 +156,7 @@ Map<String, dynamic> _$SplitDocToJson(_SplitDoc instance) => <String, dynamic>{
   'receiptAmbiguities': instance.receiptAmbiguities
       .map((e) => e.toJson())
       .toList(),
-  'claims': instance.claims.map(
-    (k, e) => MapEntry(k, e.map((e) => e.toJson()).toList()),
-  ),
+  'claims': claimsToJson(instance.claims),
   'rules': instance.rules.toJson(),
   'organiserParticipantId': instance.organiserParticipantId,
   'computed': instance.computed?.toJson(),

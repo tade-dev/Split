@@ -55,12 +55,12 @@ export const PARTICIPANT_COLOURS = 8;
 
 export function newParticipant(
   id: string,
-  input: { name: string; joinOrder: number; isOrganiser: boolean },
+  input: { name: string; joinOrder: number; isOrganiser: boolean; colourIndex?: number },
 ): ParticipantDoc {
   return {
     id,
     name: input.name,
-    colourIndex: input.joinOrder % PARTICIPANT_COLOURS,
+    colourIndex: input.colourIndex ?? input.joinOrder % PARTICIPANT_COLOURS,
     isOrganiser: input.isOrganiser,
     joinOrder: input.joinOrder,
     status: 'invited',
