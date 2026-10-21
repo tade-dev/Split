@@ -68,8 +68,25 @@ Split builds on, is `tade-dev/sorted` `docs/verified-facts.md` at `902dc25`.
 
 ## PayPal
 
-Not yet verified for Split. See plan Task 14 (payee spike to a personal
-sandbox account).
+- **A personal sandbox account can be the payee (2026-10-21).**
+  `api/scripts/payee-spike.ts` created order `9A667520R6342673Y` for £39.23
+  GBP with `payee.email_address` = `jeho@gmail.com`. PayPal returned
+  `PAYER_ACTION_REQUIRED` with a `payer-action` link. The buyer
+  `tadedev22@gmail.com` approved it, and capture `9HN51195SM208083J` came
+  back `COMPLETED`: £39.23 gross, £1.53 fee, £37.70 net to the payee. The
+  checkout showed the brand "Split", and `custom_id`
+  (`org:split:participant`) round-tripped. No shared-merchant fallback is
+  needed (plan decision E10).
+- **Webhooks arrive for a payee order (2026-10-21).** About nine deliveries
+  for the spike reached `POST /v1/webhooks/paypal`. At first every one failed
+  verification, because PayPal rejected Render's `PAYPAL_WEBHOOK_ID` with 400
+  "must match ^[a-zA-Z0-9]+$" and "size must be between 0 and 50": the wrong
+  value had been pasted in. Once the real 17-character ID was set, a resend of
+  `PAYMENT.CAPTURE.COMPLETED` (`WH-1C8720305V179940B-2Y2905661P2307307`) at
+  18:15:16 UTC left `/v1/health` at `webhookFailures: 0`, so the signature
+  passed. PayPal still marked that delivery `FAIL_SOFT`: the spike order is
+  not in Firestore, and the `collectionGroup('orders')` fallback in
+  `locateOrder` errors (plan Task 10).
 
 ## OpenAI
 
@@ -98,6 +115,3 @@ sandbox account).
   2026-10-20 (20:52, 21:31, 23:41, 00:31 UTC, all green), but roughly hourly,
   not every 10 minutes: GitHub throttles cron on quiet repos. Reconcile may
   need a tighter trigger once payments are live.
-- Whether PayPal accepts `payee.email_address` set to a personal sandbox
-  account. Fallback: the shared sandbox merchant, stated in the README.
-- Whether any PayPal webhook arrives for a payee order.
