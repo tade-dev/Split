@@ -6,7 +6,8 @@ import 'package:split/features/home/home_screen.dart';
 import 'package:split/features/scan/camera_port.dart';
 import 'package:split/features/scan/reading_screen.dart';
 import 'package:split/features/scan/scan_screen.dart';
-import 'package:split/features/split/claims_placeholder_screen.dart';
+import 'package:split/features/split/claims_screen.dart';
+import 'package:split/features/split/rules_placeholder_screen.dart';
 import 'package:split/features/split/people_screen.dart';
 import 'package:split/models/participant.dart';
 import 'package:split/features/split/receipt_screen.dart';
@@ -34,7 +35,8 @@ void main() {
     '/split/reading': ReadingScreen,
     '/split/s1/receipt': ReceiptScreen,
     '/split/s1/people': PeopleScreen,
-    '/split/s1/claims': ClaimsPlaceholderScreen,
+    '/split/s1/claims': ClaimsScreen,
+    '/split/s1/rules': RulesPlaceholderScreen,
   };
 
   for (final MapEntry(key: path, value: screen) in routes.entries) {

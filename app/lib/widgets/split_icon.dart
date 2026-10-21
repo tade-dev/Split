@@ -24,6 +24,7 @@ abstract final class SplitIcons {
   static const link = HugeIcons.strokeRoundedLink01;
   static const bell = HugeIcons.strokeRoundedNotification01;
   static const copy = HugeIcons.strokeRoundedCopy01;
+  static const send = HugeIcons.strokeRoundedSent;
   static const camera = HugeIcons.strokeRoundedCamera01;
   static const image = HugeIcons.strokeRoundedImage01;
   static const gallery = HugeIcons.strokeRoundedImage02;

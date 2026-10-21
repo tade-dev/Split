@@ -47,6 +47,12 @@ class _Api implements SplitsApi {
 
   @override
   Future<SplitDoc> patchRules(String splitId, Map<String, Object?> body) => throw UnimplementedError();
+
+  @override
+  Future<ClaimResult> claimMessage(String splitId, String message, {String? participantId}) => throw UnimplementedError();
+
+  @override
+  Future<void> patchClaims(String splitId, String lineId, List<Claim> claims, {bool? shared}) => throw UnimplementedError();
 }
 
 late _Api _api;
