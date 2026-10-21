@@ -7,6 +7,7 @@ import { requireOrganiser, type TokenVerifier } from '../lib/auth.js';
 import { looksLikeUpload, visionMime } from '../lib/image_type.js';
 import type { ChatTransport } from '../ai/client.js';
 import { extractReceipt, toDraftReceipt } from '../ai/extract_receipt.js';
+import { NOTHING_CAUGHT, parseRules, toRulesPreview } from '../ai/parse_rules.js';
 import { lineIdFor, receiptProblems } from '../domain/receipt.js';
 import { assertStatus, computeFor, createSplit, readSplit, toApi } from '../domain/splits.js';
 import type { Ambiguity } from '../ai/schemas.js';
@@ -93,6 +94,8 @@ export const rulesPatchSchema = z
   .partial()
   .strict()
   .refine((b) => Object.keys(b).length > 0, 'Send at least one change.');
+
+const rulesMessageSchema = z.object({ message: z.string().trim().min(1).max(500) }).strict();
 
 /** The index after the highest one in use, so an added line never reuses a removed line's id. */
 function nextLineIndex(receipt: Receipt): number {
@@ -229,6 +232,33 @@ export function splitsRouter(deps: SplitsDeps): Router {
         return { ...next, computed };
       });
       res.json({ split: toApi(split) });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Spec §4 endpoint 11. A preview only: the organiser confirms it with
+  // endpoint 12, so nothing here is ever applied on the model's say-so.
+  router.post('/splits/:splitId/rules/message', auth, async (req, res, next) => {
+    const parsed = rulesMessageSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      next(new ApiError(400, 'VALIDATION_FAILED', 'Say the rule in a few words.', parsed.error.format()));
+      return;
+    }
+    try {
+      const { split, participants } = await deps.db.runTransaction(async (tx) => {
+        const out = await readSplit(tx, deps.db, req.organiserId!, String(req.params.splitId));
+        assertStatus(out.split, ['draft', 'claiming'], 'change the rules');
+        return out;
+      });
+      const ctx = {
+        receipt: split.receipt,
+        claims: split.claims,
+        rules: split.rules,
+        participants: participants.map((p) => ({ id: p.id, name: p.name, joinOrder: p.joinOrder, isOrganiser: p.isOrganiser })),
+      };
+      const preview = toRulesPreview(await parseRules(parsed.data.message, ctx, deps.transport, deps.model), ctx);
+      res.json(preview ? { preview } : { preview: null, message: NOTHING_CAUGHT });
     } catch (err) {
       next(err);
     }

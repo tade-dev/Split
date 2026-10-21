@@ -66,3 +66,13 @@ export const claimParseSchema = z.object({
   ignored: z.array(z.string().max(200)).max(20).default([]),
 });
 export type ClaimParse = z.infer<typeof claimParseSchema>;
+
+/** Spec §7.3. The model proposes the whole rule set; code checks every id. */
+export const rulesParseSchema = z.object({
+  onUs: z.array(z.string()).max(20),
+  onUsPaidBy: z.array(z.string()).max(20).nullable(),
+  serviceMode: z.enum(['proportional', 'even']).nullable(),
+  serviceOptOut: z.array(z.string()).max(20),
+  confirmationText: z.string().max(300),
+});
+export type RulesParse = z.infer<typeof rulesParseSchema>;

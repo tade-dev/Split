@@ -18,6 +18,10 @@ typedef ClaimResult = ({
   List<String> ignored,
 });
 
+/// What POST /v1/splits/:id/rules/message proposes. Nothing is written until
+/// the organiser says yes and the rules go through [SplitsApi.patchRules].
+typedef RulesPreview = ({Rules? rules, String? confirmationText, int? figureMinor, String? message});
+
 /// Every write to a split. Named so tests can fake it without Dio or a token.
 abstract class SplitsApi {
   /// POST /v1/splits/scan. 3-10 seconds: the Reading screen covers it.
@@ -48,6 +52,9 @@ abstract class SplitsApi {
   /// PATCH /v1/splits/:id/claims. Replaces one line's claims, which is how
   /// *Share between …* resolves.
   Future<void> patchClaims(String splitId, String lineId, List<Claim> claims, {bool? shared});
+
+  /// POST /v1/splits/:id/rules/message. A preview for the confirm card.
+  Future<RulesPreview> rulesMessage(String splitId, String message);
 }
 
 class HttpSplitsApi implements SplitsApi {
@@ -121,6 +128,18 @@ class HttpSplitsApi implements SplitsApi {
         'claims': [for (final c in claims) {'participantId': c.participantId, 'weight': c.weight}],
         'shared': ?shared,
       });
+
+  @override
+  Future<RulesPreview> rulesMessage(String splitId, String message) async {
+    final body = await _client.postJson('/v1/splits/$splitId/rules/message', {'message': message});
+    final preview = body['preview'] as Map<String, dynamic>?;
+    return (
+      rules: preview == null ? null : Rules.fromJson(preview['rules'] as Map<String, dynamic>),
+      confirmationText: preview?['confirmationText'] as String?,
+      figureMinor: (preview?['figureMinor'] as num?)?.toInt(),
+      message: body['message'] as String?,
+    );
+  }
 }
 
 /// Reads go straight to Firestore so the screens update live; writes go
