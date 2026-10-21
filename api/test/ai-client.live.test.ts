@@ -23,15 +23,12 @@ describe.skipIf(!ready)('generateStructured against the real model', () => {
   });
 
   const schema = z.object({
-    buyerName: z.string().nullable(),
-    items: z.array(z.object({ nameRaw: z.string(), qty: z.number().int() })),
+    merchant: z.string().nullable(),
+    lines: z.array(z.object({ name: z.string(), qty: z.number().int() })),
   });
 
-  it('reads the canonical Jess screenshot into schema-valid JSON', async () => {
-    const img = toDataUri(
-      readFileSync('../samples/dm-screenshots/01.png'),
-      'image/png',
-    );
+  it('reads the Little Bao House receipt into schema-valid JSON', async () => {
+    const img = toDataUri(readFileSync('../samples/receipts/little-bao-house.png'), 'image/png');
 
     const result = await generateStructured(
       {
@@ -39,31 +36,28 @@ describe.skipIf(!ready)('generateStructured against the real model', () => {
         schema,
         jsonSchema: {
           type: 'object', additionalProperties: false,
-          required: ['buyerName', 'items'],
+          required: ['merchant', 'lines'],
           properties: {
-            buyerName: { type: ['string', 'null'] },
-            items: {
+            merchant: { type: ['string', 'null'] },
+            lines: {
               type: 'array',
               items: {
                 type: 'object', additionalProperties: false,
-                required: ['nameRaw', 'qty'],
-                properties: { nameRaw: { type: 'string' }, qty: { type: 'integer' } },
+                required: ['name', 'qty'],
+                properties: { name: { type: 'string' }, qty: { type: 'integer' } },
               },
             },
           },
         },
-        system:
-          'Extract what the buyer ordered from this chat screenshot. Quote their own words in nameRaw. "box of 6" describes one box, not a quantity of six.',
+        system: 'List the item lines on this receipt with their quantities. "Lager x3" is one line with qty 3.',
         images: [img],
       },
       makeOpenAiTransport(env),
       env.OPENAI_VISION_MODEL,
     );
 
-    expect(result.buyerName).toMatch(/Jess/);
-    expect(result.items).toHaveLength(2);
-    // The gpt-4.1-mini failure this pinning was chosen to avoid: reading
-    // "brownie box of 6" as qty 6 would bill GBP 84 instead of GBP 14.
-    for (const item of result.items) expect(item.qty).toBe(1);
+    expect(result.merchant).toMatch(/Little Bao/i);
+    expect(result.lines).toHaveLength(10);
+    expect(result.lines.find((l) => /lager/i.test(l.name))?.qty).toBe(3);
   }, 60_000);
 });
