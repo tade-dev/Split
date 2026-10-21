@@ -37,10 +37,9 @@ Split builds on, is `tade-dev/sorted` `docs/verified-facts.md` at `902dc25`.
 - **A faster reconcile trigger exists (2026-10-21, plan Task 12 / E9).** Tade
   created an external cron job at about 23:11 UTC that POSTs
   `/v1/internal/workflows/reconcile` with `X-Internal-Token`. GitHub Actions'
-  `sweeps.yml` stays as the hourly backstop. **Its first runs are not yet
-  recorded**: each should return HTTP 200 with
-  `{"checked":…,"promoted":…,"failed":…}`. A 401 means the token does not
-  match Render's `INTERNAL_TOKEN`. Capture on return (Week B Task 10) is the
+  `sweeps.yml` stays as the hourly backstop. **Its first run returned HTTP
+  200** (Tade, 23:12 UTC), so the job reaches the API and its token matches
+  Render's `INTERNAL_TOKEN`. A 401 would mean a mismatch. Capture on return (Week B Task 10) is the
   primary path to Paid, so this is only a safety net.
 
 - **Render is on `starter` (2026-10-21).** It started on `plan: free` on
