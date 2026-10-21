@@ -83,7 +83,10 @@ Split builds on, is `tade-dev/sorted` `docs/verified-facts.md` at `902dc25`.
   "must match ^[a-zA-Z0-9]+$" and "size must be between 0 and 50": the wrong
   value had been pasted in. Once the real 17-character ID was set, a resend of
   `PAYMENT.CAPTURE.COMPLETED` (`WH-1C8720305V179940B-2Y2905661P2307307`) at
-  18:15:16 UTC left `/v1/health` at `webhookFailures: 0`.
+  18:15:16 UTC left `/v1/health` at `webhookFailures: 0`, so the signature
+  passed. PayPal still marked that delivery `FAIL_SOFT`: the spike order is
+  not in Firestore, and the `collectionGroup('orders')` fallback in
+  `locateOrder` errors (plan Task 10).
 
 ## OpenAI
 
