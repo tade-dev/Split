@@ -87,6 +87,13 @@ Split builds on, is `tade-dev/sorted` `docs/verified-facts.md` at `902dc25`.
   passed. PayPal still marked that delivery `FAIL_SOFT`: the spike order is
   not in Firestore, and the `collectionGroup('orders')` fallback in
   `locateOrder` errors (plan Task 10).
+- **The missing index was the cause, and it is deployed (2026-10-21).**
+  `collectionGroup('orders').where('paypalOrderId', ...)`, used by
+  `locateOrder` and by the return page (`paypal_pages.ts`, which logged
+  "paypal return lookup failed"), needs a collection-group index.
+  `firestore.indexes.json` (PR #9) adds it, and it was deployed with
+  `firebase deploy --only firestore:indexes`. Both spike events were resent
+  at 18:32:23–24 UTC and `webhookFailures` stayed 0.
 
 ## OpenAI
 
