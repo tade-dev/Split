@@ -1,6 +1,6 @@
 import { Router, type RequestHandler } from 'express';
 import { z } from 'zod';
-import { FieldValue, type Firestore } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp, type Firestore } from 'firebase-admin/firestore';
 import multer, { MulterError } from 'multer';
 import { ApiError } from '../lib/errors.js';
 import { requireOrganiser, type TokenVerifier } from '../lib/auth.js';
@@ -8,6 +8,7 @@ import { looksLikeUpload, visionMime } from '../lib/image_type.js';
 import type { ChatTransport } from '../ai/client.js';
 import { extractReceipt, toDraftReceipt } from '../ai/extract_receipt.js';
 import { NOTHING_CAUGHT, parseRules, toRulesPreview } from '../ai/parse_rules.js';
+import { lockPlan, unlockedStatus } from '../domain/lock.js';
 import { lineIdFor, receiptProblems } from '../domain/receipt.js';
 import { assertStatus, computeFor, createSplit, readSplit, toApi } from '../domain/splits.js';
 import type { Ambiguity } from '../ai/schemas.js';
@@ -259,6 +260,57 @@ export function splitsRouter(deps: SplitsDeps): Router {
       };
       const preview = toRulesPreview(await parseRules(parsed.data.message, ctx, deps.transport, deps.model), ctx);
       res.json(preview ? { preview } : { preview: null, message: NOTHING_CAUGHT });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Spec §4 endpoint 13. Freezes every share; friends can pay from here.
+  // Safe to repeat: a split already collecting comes back as it is.
+  router.post('/splits/:splitId/lock', auth, async (req, res, next) => {
+    try {
+      const out = await deps.db.runTransaction(async (tx) => {
+        const { ref, split, participants } = await readSplit(tx, deps.db, req.organiserId!, String(req.params.splitId));
+        if (split.status === 'collecting') {
+          const owedMinor = participants.filter((p) => !p.isOrganiser && p.status !== 'on_us').reduce((t, p) => t + (p.shareMinor ?? 0), 0);
+          return { split, participants, owedMinor };
+        }
+        assertStatus(split, ['claiming'], 'lock the split');
+        const plan = lockPlan(split, participants);
+        if (!plan.ok) {
+          throw new ApiError(409, 'SPLIT_STATE_INVALID', plan.problems[0]?.question ?? 'Something on the bill still needs an answer.', { problems: plan.problems });
+        }
+        const lockedAt = Timestamp.now();
+        tx.update(ref, { status: 'collecting', computed: plan.computed, lockedAt, updatedAt: FieldValue.serverTimestamp() });
+        const byId = new Map(plan.people.map((p) => [p.id, p]));
+        const next = participants.map((p) => ({ ...p, ...byId.get(p.id)! }));
+        for (const p of plan.people) {
+          tx.update(ref.collection('participants').doc(p.id), { shareMinor: p.shareMinor, status: p.status });
+        }
+        return { split: { ...split, status: 'collecting' as const, computed: plan.computed, lockedAt }, participants: next, owedMinor: plan.owedMinor };
+      });
+      res.json(toApi(out));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Spec §4 endpoint 14. Back to claiming, unless someone has started paying.
+  router.post('/splits/:splitId/unlock', auth, async (req, res, next) => {
+    try {
+      const out = await deps.db.runTransaction(async (tx) => {
+        const { ref, split, participants } = await readSplit(tx, deps.db, req.organiserId!, String(req.params.splitId));
+        if (split.status === 'claiming') return { split, participants };
+        assertStatus(split, ['collecting'], 'unlock the split');
+        if (participants.some((p) => p.paypalOrderId)) {
+          throw new ApiError(409, 'SPLIT_STATE_INVALID', 'Someone has started paying, so the split stays locked.');
+        }
+        tx.update(ref, { status: 'claiming', lockedAt: null, updatedAt: FieldValue.serverTimestamp() });
+        const next = participants.map((p) => ({ ...p, shareMinor: null, status: unlockedStatus(p) }));
+        for (const p of next) tx.update(ref.collection('participants').doc(p.id), { shareMinor: null, status: p.status });
+        return { split: { ...split, status: 'claiming' as const, lockedAt: null }, participants: next };
+      });
+      res.json(toApi(out));
     } catch (err) {
       next(err);
     }

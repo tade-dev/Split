@@ -64,6 +64,12 @@ class _Api implements SplitsApi {
 
   @override
   Future<RulesPreview> rulesMessage(String splitId, String message) => throw UnimplementedError();
+
+  @override
+  Future<void> lock(String splitId) => throw UnimplementedError();
+
+  @override
+  Future<void> unlock(String splitId) => throw UnimplementedError();
 }
 
 late _Controller _controller;
