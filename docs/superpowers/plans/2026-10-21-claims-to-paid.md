@@ -113,11 +113,13 @@ Veto any of these before execution starts.
 
 Spec §5's week-1 check. It decides E10, so it comes first.
 
-- [ ] **Step 1:** As the buyer sandbox account, approve order `9A667520R6342673Y` (created 2026-10-21 by `api/scripts/payee-spike.ts`).
-- [ ] **Step 2:** `cd api && npx tsx scripts/payee-spike.ts --capture 9A667520R6342673Y`. Record the capture status, the payee in the response, and whether £39.23 arrived (net of fees) in the payee's sandbox account.
+**Result (2026-10-21):** the personal payee works, so E10 takes its first branch. See *PayPal* in `docs/verified-facts.md`. Only Step 3 (webhook) is still open.
+
+- [x] **Step 1:** As the buyer sandbox account, approve order `9A667520R6342673Y` (created 2026-10-21 by `api/scripts/payee-spike.ts`).
+- [x] **Step 2:** `cd api && npx tsx scripts/payee-spike.ts --capture 9A667520R6342673Y`. Record the capture status, the payee in the response, and whether £39.23 arrived (net of fees) in the payee's sandbox account.
 - [ ] **Step 3:** Check whether a webhook reached Render. Look in the service logs, or in `webhookEvents` in Firestore.
-- [ ] **Step 4:** Under *PayPal* in `docs/verified-facts.md`, record the order id, `PAYER_ACTION_REQUIRED`, the `payer-action` rel, the capture status, where the money landed, whether a webhook arrived, and the date. If the payee was refused, record the exact error and pick E10's fallback.
-- [ ] **Step 5:** Commit on `docs/payee-spike`.
+- [x] **Step 4:** Under *PayPal* in `docs/verified-facts.md`, record the order id, `PAYER_ACTION_REQUIRED`, the `payer-action` rel, the capture status, where the money landed, whether a webhook arrived, and the date. If the payee was refused, record the exact error and pick E10's fallback.
+- [x] **Step 5:** Recorded on `docs/claims-to-paid-plan`.
 
 ## Task 1: Claims shape and Q1 in `allocate`
 

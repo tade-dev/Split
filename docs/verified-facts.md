@@ -68,8 +68,15 @@ Split builds on, is `tade-dev/sorted` `docs/verified-facts.md` at `902dc25`.
 
 ## PayPal
 
-Not yet verified for Split. See plan Task 14 (payee spike to a personal
-sandbox account).
+- **A personal sandbox account can be the payee (2026-10-21).**
+  `api/scripts/payee-spike.ts` created order `9A667520R6342673Y` for £39.23
+  GBP with `payee.email_address` = `jeho@gmail.com`. PayPal returned
+  `PAYER_ACTION_REQUIRED` with a `payer-action` link. The buyer
+  `tadedev22@gmail.com` approved it, and capture `9HN51195SM208083J` came
+  back `COMPLETED`: £39.23 gross, £1.53 fee, £37.70 net to the payee. The
+  checkout showed the brand "Split", and `custom_id`
+  (`org:split:participant`) round-tripped. No shared-merchant fallback is
+  needed (plan decision E10).
 
 ## OpenAI
 
@@ -98,6 +105,6 @@ sandbox account).
   2026-10-20 (20:52, 21:31, 23:41, 00:31 UTC, all green), but roughly hourly,
   not every 10 minutes: GitHub throttles cron on quiet repos. Reconcile may
   need a tighter trigger once payments are live.
-- Whether PayPal accepts `payee.email_address` set to a personal sandbox
-  account. Fallback: the shared sandbox merchant, stated in the README.
-- Whether any PayPal webhook arrives for a payee order.
+- Whether any PayPal webhook arrives for a payee order. The spike captured
+  at about 18:05 UTC on 2026-10-21; Render's logs for
+  `POST /v1/webhooks/paypal` around then will say.
