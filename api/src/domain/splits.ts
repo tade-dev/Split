@@ -2,7 +2,8 @@ import { FieldValue, Timestamp, type DocumentReference, type Firestore, type Tra
 import type { Ambiguity } from '../ai/schemas.js';
 import { ApiError } from '../lib/errors.js';
 import { allocate } from './allocate.js';
-import { DEFAULT_RULES, type Allocation, type Claim, type Receipt, type Rules } from './split.js';
+import { normaliseClaims } from './claims.js';
+import { DEFAULT_RULES, type Allocation, type LineClaims, type Receipt, type Rules } from './split.js';
 
 export type SplitStatus = 'draft' | 'claiming' | 'collecting' | 'settled' | 'cancelled';
 
@@ -19,7 +20,7 @@ export type SplitDoc = {
   status: SplitStatus;
   receipt: Receipt;
   receiptAmbiguities: Ambiguity[];
-  claims: Record<string, Claim[]>;
+  claims: Record<string, LineClaims>;
   rules: Rules;
   organiserParticipantId: string;
   computed: Allocation | null;
@@ -90,7 +91,7 @@ export function computeFor(split: Pick<SplitDoc, 'receipt' | 'claims' | 'rules'>
     receipt: split.receipt,
     claims: split.claims,
     rules: split.rules,
-    participants: participants.map((p) => ({ id: p.id, joinOrder: p.joinOrder, isOrganiser: p.isOrganiser })),
+    participants: participants.map((p) => ({ id: p.id, joinOrder: p.joinOrder, isOrganiser: p.isOrganiser, name: p.name })),
   });
 }
 
@@ -162,9 +163,10 @@ export async function readSplit(
   const snap = await tx.get(ref);
   if (!snap.exists) throw new ApiError(404, 'NOT_FOUND', 'That split does not exist.');
   const people = await tx.get(ref.collection('participants'));
+  const data = snap.data() as SplitDoc;
   return {
     ref,
-    split: { ...(snap.data() as SplitDoc), id: snap.id },
+    split: { ...data, id: snap.id, claims: normaliseClaims(data.claims) },
     participants: people.docs.map((d) => ({ ...(d.data() as ParticipantDoc), id: d.id })),
   };
 }

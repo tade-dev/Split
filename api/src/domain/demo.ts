@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import { lineIdFor } from './receipt.js';
-import type { AllocParticipant, Claim, Receipt, Rules } from './split.js';
+import type { AllocParticipant, LineClaims, Receipt, Rules } from './split.js';
 
 /**
  * The Little Bao House bill: the golden fixture in spec §3 and the demo split
@@ -23,6 +23,8 @@ const fileSchema = z.object({
     qty: z.number().int().min(1),
     lineTotalMinor: minor,
     claims: z.record(z.string(), z.number().int().min(1)),
+    /** Q1: split by weight even though the weights fall short of qty. */
+    shared: z.boolean().default(false),
   })).min(1),
   serviceChargeMinor: minor,
   serviceChargeLabel: z.string().nullable(),
@@ -46,7 +48,7 @@ export type DemoSplit = {
   receiptDate: string;
   receipt: Receipt;
   participants: DemoParticipant[];
-  claims: Record<string, Claim[]>;
+  claims: Record<string, LineClaims>;
   rules: Rules;
 };
 
@@ -63,9 +65,12 @@ export function loadDemoSplit(path: string = DEMO_PATH): DemoSplit {
   };
 
   const lines = file.lines.map((l, i) => ({ id: lineIdFor(l.name, i), name: l.name, qty: l.qty, lineTotalMinor: l.lineTotalMinor }));
-  const claims: Record<string, Claim[]> = {};
+  const claims: Record<string, LineClaims> = {};
   file.lines.forEach((l, i) => {
-    claims[lines[i]!.id] = Object.entries(l.claims).map(([name, weight]) => ({ participantId: id(name), weight, source: 'organiser' as const }));
+    claims[lines[i]!.id] = {
+      claims: Object.entries(l.claims).map(([name, weight]) => ({ participantId: id(name), weight, source: 'organiser' as const })),
+      shared: l.shared,
+    };
   });
 
   return {
