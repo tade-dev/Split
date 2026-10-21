@@ -55,6 +55,12 @@ abstract class SplitsApi {
 
   /// POST /v1/splits/:id/rules/message. A preview for the confirm card.
   Future<RulesPreview> rulesMessage(String splitId, String message);
+
+  /// POST /v1/splits/:id/lock. Freezes every share; safe to repeat.
+  Future<void> lock(String splitId);
+
+  /// POST /v1/splits/:id/unlock. Refused once anyone has started paying.
+  Future<void> unlock(String splitId);
 }
 
 class HttpSplitsApi implements SplitsApi {
@@ -140,6 +146,12 @@ class HttpSplitsApi implements SplitsApi {
       message: body['message'] as String?,
     );
   }
+
+  @override
+  Future<void> lock(String splitId) => _client.postJson('/v1/splits/$splitId/lock', const <String, Object?>{});
+
+  @override
+  Future<void> unlock(String splitId) => _client.postJson('/v1/splits/$splitId/unlock', const <String, Object?>{});
 }
 
 /// Reads go straight to Firestore so the screens update live; writes go

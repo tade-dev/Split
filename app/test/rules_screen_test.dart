@@ -74,6 +74,12 @@ class _Api implements SplitsApi {
   Future<SplitDoc> scan(List<Photo> photos) => throw UnimplementedError();
   @override
   Future<SplitDoc> patchReceipt(String splitId, Map<String, Object?> body) => throw UnimplementedError();
+
+  @override
+  Future<void> lock(String splitId) => throw UnimplementedError();
+
+  @override
+  Future<void> unlock(String splitId) => throw UnimplementedError();
 }
 
 late _Api _api;
