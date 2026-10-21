@@ -8,6 +8,7 @@ export type ErrorCode =
   | 'PAYPAL_UNAVAILABLE'
   | 'ORDER_STATE_INVALID'
   | 'SPLIT_STATE_INVALID'
+  | 'RATE_LIMITED'
   | 'INTERNAL';
 
 export class ApiError extends Error {

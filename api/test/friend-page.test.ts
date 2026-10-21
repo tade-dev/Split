@@ -58,6 +58,7 @@ describe('GET /v1/s/...', () => {
     expect(res.text).toContain('Kemi paid £154.69 at Little Bao House.');
     expect(res.text).toContain('Spicy miso ramen');
     expect(res.text).toContain(`action="${path}/claim"`);
+    expect(res.text).toContain(`href="${path}?pick=1"`);
   });
 
   it('marks the first view only', async () => {
@@ -134,7 +135,7 @@ describe('friendView', () => {
     expect(view).toEqual({ kind: 'claimed', name: 'Dan', organiser: 'Kemi', mine: [
       { label: 'Lager, 1 of 3', minor: null },
       { label: 'Spicy miso ramen', minor: null },
-    ] });
+    ], changeHref: '/v1/s/x?pick=1' });
     expect(friendPage(view)).toContain('Waiting for everyone else');
   });
 

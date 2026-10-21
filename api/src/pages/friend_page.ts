@@ -10,8 +10,10 @@ import type { ParticipantDoc, SplitDoc } from '../domain/splits.js';
 export type FriendView =
   | { kind: 'gone' }
   | { kind: 'cancelled'; organiser: string }
-  | { kind: 'claim'; name: string; organiser: string; merchant: string | null; totalMinor: Minor | null; lines: { name: string; qty: number; minor: Minor | null }[]; action: string }
-  | { kind: 'claimed'; name: string; organiser: string; mine: { label: string; minor: Minor | null }[] }
+  | { kind: 'claim'; name: string; organiser: string; merchant: string | null; totalMinor: Minor | null; lines: { name: string; qty: number; minor: Minor | null }[]; action: string; pickHref: string }
+  | { kind: 'claimed'; name: string; organiser: string; mine: { label: string; minor: Minor | null }[]; changeHref: string }
+  | { kind: 'preview'; name: string; matched: { lineId: string; label: string; weight: number }[]; notes: string[]; message: string; action: string; pickHref: string; retryHref: string }
+  | { kind: 'pick'; name: string; lines: { lineId: string; label: string; qty: number; weight: number }[]; notes: string[]; action: string }
   | { kind: 'pay'; name: string; organiser: string; title: string; shareMinor: Minor; rows: { label: string; minor: number }[]; action: string }
   | { kind: 'processing'; organiser: string }
   | { kind: 'paid'; organiser: string }
@@ -45,13 +47,32 @@ function payRows(split: SplitDoc, participantId: string): { label: string; minor
   ].filter((r) => r.minor !== 0);
 }
 
-export function friendView(split: SplitDoc, participant: ParticipantDoc, organiser: string, selfPath: string): FriendView {
+/** The checklist: every line with this person's current weight on it. */
+export function pickView(split: SplitDoc, participant: ParticipantDoc, selfPath: string, notes: string[] = []): FriendView {
+  return {
+    kind: 'pick',
+    name: participant.name,
+    lines: split.receipt.lines.map((l) => ({
+      lineId: l.id,
+      label: l.name,
+      qty: l.qty,
+      weight: (split.claims[l.id]?.claims ?? []).filter((c) => c.participantId === participant.id).reduce((t, c) => t + c.weight, 0),
+    })),
+    notes,
+    action: `${selfPath}/claim/confirm`,
+  };
+}
+
+export function friendView(split: SplitDoc, participant: ParticipantDoc, organiser: string, selfPath: string, opts: { pick?: boolean } = {}): FriendView {
   if (split.status === 'cancelled') return { kind: 'cancelled', organiser };
   if (split.status === 'draft') return { kind: 'gone' };
   if (participant.status === 'paid' || participant.status === 'paid_cash') return { kind: 'paid', organiser };
   if (participant.status === 'on_us') return { kind: 'on_us' };
   if (split.status === 'claiming') {
-    if (participant.status === 'claimed') return { kind: 'claimed', name: participant.name, organiser, mine: myLines(split, participant.id) };
+    if (opts.pick) return pickView(split, participant, selfPath);
+    if (participant.status === 'claimed') {
+      return { kind: 'claimed', name: participant.name, organiser, mine: myLines(split, participant.id), changeHref: `${selfPath}?pick=1` };
+    }
     return {
       kind: 'claim',
       name: participant.name,
@@ -60,6 +81,7 @@ export function friendView(split: SplitDoc, participant: ParticipantDoc, organis
       totalMinor: split.receipt.printedTotalMinor,
       lines: split.receipt.lines.map((l) => ({ name: l.name, qty: l.qty, minor: l.lineTotalMinor })),
       action: `${selfPath}/claim`,
+      pickHref: `${selfPath}?pick=1`,
     };
   }
   if (split.status === 'collecting' && (participant.status === 'processing' || participant.status === 'pending')) {
@@ -81,6 +103,7 @@ export function friendView(split: SplitDoc, participant: ParticipantDoc, organis
   return { kind: 'paid', organiser };
 }
 
+const notes = (lines: string[]) => lines.map((n) => `<p class="note">${escapeHtml(n)}</p>`).join('');
 const money = (minor: number) => (minor < 0 ? `−${formatGbp(-minor as Minor)}` : formatGbp(minor as Minor));
 const possessive = (name: string) => `${name}${name.endsWith('s') ? "'" : "'s"}`;
 
@@ -109,6 +132,7 @@ function body(view: FriendView): { title: string; html: string } {
     <textarea id="message" name="message" rows="3" maxlength="500" placeholder="spicy ramen, a lager and one of the bao" required></textarea>
     <button type="submit">Check it against the bill</button>
   </form>
+  <p><a href="${escapeHtml(view.pickHref)}">Pick from the bill instead</a></p>
   <h2>On the bill</h2>
   <ul class="rows">${lines}</ul>`,
       };
@@ -119,7 +143,40 @@ function body(view: FriendView): { title: string; html: string } {
         title: 'Waiting for everyone else',
         html: `<h1>Waiting for everyone else</h1>
   <p>You said what you had, ${escapeHtml(view.name)}. ${escapeHtml(view.organiser)} sends your share once everyone has.</p>
-  <ul class="rows">${rows}</ul>`,
+  <ul class="rows">${rows}</ul>
+  <p><a href="${escapeHtml(view.changeHref)}">Change what I had</a></p>`,
+      };
+    }
+    case 'preview': {
+      const rows = view.matched.map((m) => `<li><span>${escapeHtml(m.label)}</span></li>`).join('');
+      const hidden = view.matched.map((m) => `<input type="hidden" name="w_${escapeHtml(m.lineId)}" value="${m.weight}">`).join('');
+      const confirm = view.matched.length > 0
+        ? `<form method="post" action="${escapeHtml(view.action)}">${hidden}<input type="hidden" name="message" value="${escapeHtml(view.message)}"><button type="submit">That's right</button></form>`
+        : '';
+      return {
+        title: 'Split matched this to the bill',
+        html: `<p class="lede">${escapeHtml(view.message)}</p>
+  <h1>${view.matched.length > 0 ? 'Split matched this to the bill' : 'Not quite'}</h1>
+  ${notes(view.notes)}
+  ${view.matched.length > 0 ? `<ul class="rows">${rows}</ul>` : ''}
+  <p class="lede">Your share of anything shared, and the service, is added once everyone has claimed.</p>
+  ${confirm}
+  <p><a href="${escapeHtml(view.retryHref)}">Try saying it again</a> · <a href="${escapeHtml(view.pickHref)}">Pick from the bill instead</a></p>`,
+      };
+    }
+    case 'pick': {
+      const rows = view.lines
+        .map((l) => `<li><label for="w_${escapeHtml(l.lineId)}">${escapeHtml(l.label)}</label><input id="w_${escapeHtml(l.lineId)}" name="w_${escapeHtml(l.lineId)}" type="number" inputmode="numeric" min="0" max="${l.qty}" value="${l.weight}"></li>`)
+        .join('');
+      return {
+        title: `What did you have, ${view.name}?`,
+        html: `<h1>What did you have, ${escapeHtml(view.name)}?</h1>
+  <p>Put how many of each you had. Leave the rest at 0.</p>
+  ${notes(view.notes)}
+  <form method="post" action="${escapeHtml(view.action)}">
+    <ul class="rows pick">${rows}</ul>
+    <button type="submit">That's what I had</button>
+  </form>`,
       };
     }
     case 'pay': {
@@ -172,6 +229,8 @@ export function friendPage(view: FriendView): string {
   form { margin: 1.25rem 0 0; }
   textarea { box-sizing: border-box; width: 100%; padding: 0.875rem; border: 1px solid #E3E8EF; border-radius: 16px; font: inherit; color: inherit; background: #FFFFFF; }
   button { width: 100%; min-height: 54px; margin-top: 0.75rem; border: 0; border-radius: 16px; background: #0070E0; color: #FFFFFF; font: 600 1.0625rem "Plus Jakarta Sans", sans-serif; cursor: pointer; }
+  .note { padding: 0.75rem 1rem; background: #FFF6E0; border-radius: 14px; color: #6B4A00; }
+  .pick input { width: 4rem; padding: 0.4rem; border: 1px solid #E3E8EF; border-radius: 10px; font: inherit; text-align: center; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 </style>
 </head>

@@ -55,3 +55,14 @@ export const receiptExtractionSchema = z.object({
   ambiguities: z.array(ambiguitySchema).default([]),
 });
 export type ReceiptExtraction = z.infer<typeof receiptExtractionSchema>;
+
+/**
+ * Spec §7.2. Weights are any number here, not integers, so a "half a pizza"
+ * from the model reaches code and becomes a question rather than a retry.
+ */
+export const claimParseSchema = z.object({
+  claims: z.array(z.object({ lineId: z.string(), participantId: z.string(), weight: z.number() })).max(120),
+  ambiguities: z.array(ambiguitySchema).default([]),
+  ignored: z.array(z.string().max(200)).max(20).default([]),
+});
+export type ClaimParse = z.infer<typeof claimParseSchema>;
