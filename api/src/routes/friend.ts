@@ -2,6 +2,8 @@ import express, { Router, type Request, type Response } from 'express';
 import { FieldValue, type Firestore } from 'firebase-admin/firestore';
 import type { Env } from '../env.js';
 import type { ChatTransport } from '../ai/client.js';
+import type { PayPalFetch } from '../paypal/client.js';
+import { createPayPalOrder } from '../paypal/orders.js';
 import { parseClaim, toClaimPreview, type ClaimContext } from '../ai/parse_claim.js';
 import type { Ambiguity } from '../ai/schemas.js';
 import { ApiError } from '../lib/errors.js';
@@ -10,7 +12,7 @@ import { applyClaims, normaliseClaims } from '../domain/claims.js';
 import { computeFor, readSplit, splitPath, type ParticipantDoc, type SplitDoc } from '../domain/splits.js';
 import { friendPage, friendView, pickView, type FriendView } from '../pages/friend_page.js';
 
-export type FriendDeps = { env: Env; db: Firestore; transport: ChatTransport; model: string };
+export type FriendDeps = { env: Env; db: Firestore; transport: ChatTransport; model: string; paypal: PayPalFetch };
 
 /** Typed claims a friend may send before Split asks them to pick instead. */
 export const MAX_AI_PARSES = 8;
@@ -263,6 +265,73 @@ export function friendRouter(deps: FriendDeps): Router {
       }
       if (form) res.redirect(303, link.selfPath);
       else res.json({ status: 'claimed', lines });
+    } catch (err) {
+      if (err instanceof Gone) gone(res);
+      else next(err);
+    }
+  });
+
+  // FriendPay's button. One PayPal order per share: the first tap makes it,
+  // later taps reuse it. The amount is the shareMinor frozen at lock, never
+  // worked out again here (plan Review Focus 7).
+  router.post('/s/:organiserId/:splitId/:participantId/:sig/pay', async (req, res, next) => {
+    const link = linkFrom(req, deps.env);
+    if (!link) {
+      gone(res);
+      return;
+    }
+    const form = isForm(req);
+    const refuse = (message: string) => {
+      if (form) res.redirect(303, link.selfPath);
+      else next(new ApiError(409, 'SPLIT_STATE_INVALID', message));
+    };
+    const done = (approvalUrl: string) => {
+      if (form) res.redirect(303, approvalUrl);
+      else res.json({ approvalUrl });
+    };
+    try {
+      const read = await deps.db.runTransaction(async (tx) => {
+        const out = await readLink(tx, deps.db, link);
+        const organiser = await tx.get(deps.db.doc(`organisers/${link.organiserId}`));
+        return { ...out, payeeEmail: (organiser.get('paypalEmail') as string | null | undefined) ?? null };
+      });
+      const { split, person } = read;
+      if (split.status !== 'collecting' || (person.status !== 'owes' && person.status !== 'link_opened')) {
+        refuse('There is nothing to pay on this link right now.');
+        return;
+      }
+      if (person.paypalOrderId && person.approvalUrl) {
+        done(person.approvalUrl);
+        return;
+      }
+      if (!person.shareMinor || person.shareMinor <= 0) {
+        refuse('There is nothing to pay on this link.');
+        return;
+      }
+      const where = split.merchant ? ` (${split.merchant})` : '';
+      const created = await createPayPalOrder(
+        {
+          referenceId: person.id,
+          customId: `${link.organiserId}:${link.splitId}:${person.id}`,
+          amountMinor: person.shareMinor,
+          description: `Your share of ${split.title}${where}`,
+          payeeEmail: read.payeeEmail,
+          requestId: `pay-${link.splitId}-${person.id}-${person.supersededPaypalOrderIds.length}`,
+        },
+        deps.paypal,
+        deps.env.PUBLIC_BASE_URL,
+      );
+      // Two taps at once both reach PayPal with the same request id, so they
+      // get the same order back; whichever stores it first wins, harmlessly.
+      const approvalUrl = await deps.db.runTransaction(async (tx) => {
+        const ref = deps.db.doc(splitPath(link.organiserId, link.splitId)).collection('participants').doc(person.id);
+        const fresh = await tx.get(ref);
+        const stored = fresh.get('approvalUrl') as string | null;
+        if (fresh.get('paypalOrderId') && stored) return stored;
+        tx.update(ref, { paypalOrderId: created.paypalOrderId, approvalUrl: created.approvalUrl });
+        return created.approvalUrl;
+      });
+      done(approvalUrl);
     } catch (err) {
       if (err instanceof Gone) gone(res);
       else next(err);

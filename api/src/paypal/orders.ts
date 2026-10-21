@@ -1,7 +1,6 @@
 import { ApiError } from '../lib/errors.js';
 import { DEFAULT_PUBLIC_BASE_URL } from '../env.js';
 import { toPayPalValue } from '../domain/money.js';
-import type { OrderDoc } from '../domain/orders.js';
 import type { PayPalFetch } from './client.js';
 
 type CreatedOrder = {
@@ -10,72 +9,56 @@ type CreatedOrder = {
   links?: { rel: string; href: string; method: string }[];
 };
 
+export type ShareOrder = {
+  /** purchase_units[0].reference_id: the participant. */
+  referenceId: string;
+  /** `organiserId:splitId:participantId`, so a webhook needs no lookup. */
+  customId: string;
+  amountMinor: number;
+  description: string;
+  /**
+   * The organiser's PayPal email: PayPal pays it directly, verified by the
+   * payee spike (docs/verified-facts.md). Null pays the shared sandbox
+   * merchant that owns the app (plan E10).
+   */
+  payeeEmail: string | null;
+  /** PayPal-Request-Id. A new one per superseded order, or PayPal hands back the old one. */
+  requestId: string;
+};
+
 /**
- * Creates the order the buyer will approve.
+ * Creates the order a friend approves for their share. The body is the one
+ * the payee spike sent, which PayPal accepted: one amount, no item breakdown
+ * (spec §5), so it can never disagree with the share Split worked out.
  *
- * Shapes verified against a real sandbox order (docs/verified-facts.md):
- * with payment_source.paypal.experience_context the response status is
- * PAYER_ACTION_REQUIRED and the approval link is rel="payer-action" — there
+ * With payment_source.paypal.experience_context the response status is
+ * PAYER_ACTION_REQUIRED and the approval link is rel="payer-action"; there
  * is no rel="approve".
  */
 export async function createPayPalOrder(
-  order: OrderDoc,
-  organiserId: string,
+  order: ShareOrder,
   call: PayPalFetch,
   publicBaseUrl: string = DEFAULT_PUBLIC_BASE_URL,
-  /**
-   * The seller's own PayPal email. PayPal pays it directly ("pay another
-   * account"); Split's app still captures. Null pays the shared sandbox
-   * merchant that owns the app, which keeps the demo working.
-   */
-  payeeEmail: string | null = null,
 ): Promise<{ paypalOrderId: string; approvalUrl: string }> {
-  if (order.amountDueMinor <= 0) {
-    throw new ApiError(
-      400,
-      'VALIDATION_FAILED',
-      'There is nothing to charge for on this order.',
-    );
+  if (!Number.isSafeInteger(order.amountMinor) || order.amountMinor <= 0) {
+    throw new ApiError(400, 'VALIDATION_FAILED', 'There is nothing to pay on this share.');
   }
-
-  const value = toPayPalValue(order.amountDueMinor);
-  const takingDeposit = order.depositMinor !== null;
   const base = publicBaseUrl.replace(/\/+$/, '') || DEFAULT_PUBLIC_BASE_URL;
-
-  // PayPal rejects the order unless item_total equals the sum of items, and a
-  // deposit never equals the goods. Send the itemised breakdown only when the
-  // buyer is paying for the whole order.
-  const items = order.lineItems.map((line) => ({
-    name: (line.nameResolved ?? line.nameRaw).slice(0, 127),
-    quantity: String(line.qty),
-    unit_amount: { currency_code: 'GBP', value: toPayPalValue(line.unitPriceMinor) },
-  }));
-
-  const purchaseUnit: Record<string, unknown> = {
-    reference_id: order.id,
-    custom_id: `${organiserId}:${order.id}`,
-    amount: takingDeposit
-      ? { currency_code: 'GBP', value }
-      : {
-          currency_code: 'GBP',
-          value,
-          breakdown: { item_total: { currency_code: 'GBP', value } },
-        },
-    ...(takingDeposit ? {} : { items }),
-    ...(payeeEmail ? { payee: { email_address: payeeEmail } } : {}),
-    ...(takingDeposit
-      ? { description: `Deposit for order ${order.id.slice(0, 8)}` }
-      : {}),
-  };
 
   const created = (await call('/v2/checkout/orders', {
     method: 'POST',
-    // A fresh id per link: after an edit supersedes one, reusing the same
-    // PayPal-Request-Id would hand back the old order and its old amount.
-    requestId: `create-${order.id}-${order.supersededPaypalOrderIds?.length ?? 0}`,
+    requestId: order.requestId,
     body: {
       intent: 'CAPTURE',
-      purchase_units: [purchaseUnit],
+      purchase_units: [
+        {
+          reference_id: order.referenceId,
+          custom_id: order.customId,
+          description: order.description.slice(0, 127),
+          amount: { currency_code: 'GBP', value: toPayPalValue(order.amountMinor) },
+          ...(order.payeeEmail ? { payee: { email_address: order.payeeEmail } } : {}),
+        },
+      ],
       payment_source: {
         paypal: {
           experience_context: {
@@ -93,13 +76,9 @@ export async function createPayPalOrder(
 
   const approval = created.links?.find((l) => l.rel === 'payer-action')?.href;
   if (!created.id || !approval) {
-    throw new ApiError(
-      502,
-      'PAYPAL_UNAVAILABLE',
-      'PayPal created the order but returned no checkout link. Try again.',
-      { status: created.status },
-    );
+    throw new ApiError(502, 'PAYPAL_UNAVAILABLE', 'PayPal created the order but returned no checkout link. Try again.', {
+      status: created.status,
+    });
   }
-
   return { paypalOrderId: created.id, approvalUrl: approval };
 }
