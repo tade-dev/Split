@@ -18,7 +18,7 @@ mixin _$Participant {
 
  String get id; String get name; int get colourIndex; bool get isOrganiser; int get joinOrder; String get status; int? get shareMinor;/// What they typed on their link, verbatim. Null when they picked from
 /// the bill instead, or the organiser claimed for them.
- String? get claimText;@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? get claimedAt;
+ String? get claimText;@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? get claimedAt;@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? get linkOpenedAt;@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? get paidAt;
 /// Create a copy of Participant
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -32,20 +32,20 @@ $ParticipantCopyWith<Participant> get copyWith => _$ParticipantCopyWithImpl<Part
 @override
 bool operator ==(Object other) {
   final _this = this as Participant;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Participant&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.colourIndex, _this.colourIndex) || other.colourIndex == _this.colourIndex)&&(identical(other.isOrganiser, _this.isOrganiser) || other.isOrganiser == _this.isOrganiser)&&(identical(other.joinOrder, _this.joinOrder) || other.joinOrder == _this.joinOrder)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.shareMinor, _this.shareMinor) || other.shareMinor == _this.shareMinor)&&(identical(other.claimText, _this.claimText) || other.claimText == _this.claimText)&&(identical(other.claimedAt, _this.claimedAt) || other.claimedAt == _this.claimedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Participant&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.colourIndex, _this.colourIndex) || other.colourIndex == _this.colourIndex)&&(identical(other.isOrganiser, _this.isOrganiser) || other.isOrganiser == _this.isOrganiser)&&(identical(other.joinOrder, _this.joinOrder) || other.joinOrder == _this.joinOrder)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.shareMinor, _this.shareMinor) || other.shareMinor == _this.shareMinor)&&(identical(other.claimText, _this.claimText) || other.claimText == _this.claimText)&&(identical(other.claimedAt, _this.claimedAt) || other.claimedAt == _this.claimedAt)&&(identical(other.linkOpenedAt, _this.linkOpenedAt) || other.linkOpenedAt == _this.linkOpenedAt)&&(identical(other.paidAt, _this.paidAt) || other.paidAt == _this.paidAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as Participant;
-  return Object.hash(runtimeType,_this.id,_this.name,_this.colourIndex,_this.isOrganiser,_this.joinOrder,_this.status,_this.shareMinor,_this.claimText,_this.claimedAt);
+  return Object.hash(runtimeType,_this.id,_this.name,_this.colourIndex,_this.isOrganiser,_this.joinOrder,_this.status,_this.shareMinor,_this.claimText,_this.claimedAt,_this.linkOpenedAt,_this.paidAt);
 }
 
 @override
 String toString() {
   final _this = this as Participant;
-  return 'Participant(id: ${_this.id}, name: ${_this.name}, colourIndex: ${_this.colourIndex}, isOrganiser: ${_this.isOrganiser}, joinOrder: ${_this.joinOrder}, status: ${_this.status}, shareMinor: ${_this.shareMinor}, claimText: ${_this.claimText}, claimedAt: ${_this.claimedAt})';
+  return 'Participant(id: ${_this.id}, name: ${_this.name}, colourIndex: ${_this.colourIndex}, isOrganiser: ${_this.isOrganiser}, joinOrder: ${_this.joinOrder}, status: ${_this.status}, shareMinor: ${_this.shareMinor}, claimText: ${_this.claimText}, claimedAt: ${_this.claimedAt}, linkOpenedAt: ${_this.linkOpenedAt}, paidAt: ${_this.paidAt})';
 }
 
 
@@ -56,7 +56,7 @@ abstract mixin class $ParticipantCopyWith<$Res>  {
   factory $ParticipantCopyWith(Participant value, $Res Function(Participant) _then) = _$ParticipantCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, int colourIndex, bool isOrganiser, int joinOrder, String status, int? shareMinor, String? claimText,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? claimedAt
+ String id, String name, int colourIndex, bool isOrganiser, int joinOrder, String status, int? shareMinor, String? claimText,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? claimedAt,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? linkOpenedAt,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? paidAt
 });
 
 
@@ -73,7 +73,7 @@ class _$ParticipantCopyWithImpl<$Res>
 
 /// Create a copy of Participant
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? colourIndex = null,Object? isOrganiser = null,Object? joinOrder = null,Object? status = null,Object? shareMinor = freezed,Object? claimText = freezed,Object? claimedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? colourIndex = null,Object? isOrganiser = null,Object? joinOrder = null,Object? status = null,Object? shareMinor = freezed,Object? claimText = freezed,Object? claimedAt = freezed,Object? linkOpenedAt = freezed,Object? paidAt = freezed,}) {
   return _then(Participant(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -84,6 +84,8 @@ as int,status: null == status ? _self.status : status // ignore: cast_nullable_t
 as String,shareMinor: freezed == shareMinor ? _self.shareMinor : shareMinor // ignore: cast_nullable_to_non_nullable
 as int?,claimText: freezed == claimText ? _self.claimText : claimText // ignore: cast_nullable_to_non_nullable
 as String?,claimedAt: freezed == claimedAt ? _self.claimedAt : claimedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,linkOpenedAt: freezed == linkOpenedAt ? _self.linkOpenedAt : linkOpenedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,paidAt: freezed == paidAt ? _self.paidAt : paidAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }
@@ -169,10 +171,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  int colourIndex,  bool isOrganiser,  int joinOrder,  String status,  int? shareMinor,  String? claimText, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? claimedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  int colourIndex,  bool isOrganiser,  int joinOrder,  String status,  int? shareMinor,  String? claimText, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? claimedAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? linkOpenedAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? paidAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Participant() when $default != null:
-return $default(_that.id,_that.name,_that.colourIndex,_that.isOrganiser,_that.joinOrder,_that.status,_that.shareMinor,_that.claimText,_that.claimedAt);case _:
+return $default(_that.id,_that.name,_that.colourIndex,_that.isOrganiser,_that.joinOrder,_that.status,_that.shareMinor,_that.claimText,_that.claimedAt,_that.linkOpenedAt,_that.paidAt);case _:
   return orElse();
 
 }
@@ -190,10 +192,10 @@ return $default(_that.id,_that.name,_that.colourIndex,_that.isOrganiser,_that.jo
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  int colourIndex,  bool isOrganiser,  int joinOrder,  String status,  int? shareMinor,  String? claimText, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? claimedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  int colourIndex,  bool isOrganiser,  int joinOrder,  String status,  int? shareMinor,  String? claimText, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? claimedAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? linkOpenedAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? paidAt)  $default,) {final _that = this;
 switch (_that) {
 case _Participant():
-return $default(_that.id,_that.name,_that.colourIndex,_that.isOrganiser,_that.joinOrder,_that.status,_that.shareMinor,_that.claimText,_that.claimedAt);case _:
+return $default(_that.id,_that.name,_that.colourIndex,_that.isOrganiser,_that.joinOrder,_that.status,_that.shareMinor,_that.claimText,_that.claimedAt,_that.linkOpenedAt,_that.paidAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -210,10 +212,10 @@ return $default(_that.id,_that.name,_that.colourIndex,_that.isOrganiser,_that.jo
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  int colourIndex,  bool isOrganiser,  int joinOrder,  String status,  int? shareMinor,  String? claimText, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? claimedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  int colourIndex,  bool isOrganiser,  int joinOrder,  String status,  int? shareMinor,  String? claimText, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? claimedAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? linkOpenedAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime? paidAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Participant() when $default != null:
-return $default(_that.id,_that.name,_that.colourIndex,_that.isOrganiser,_that.joinOrder,_that.status,_that.shareMinor,_that.claimText,_that.claimedAt);case _:
+return $default(_that.id,_that.name,_that.colourIndex,_that.isOrganiser,_that.joinOrder,_that.status,_that.shareMinor,_that.claimText,_that.claimedAt,_that.linkOpenedAt,_that.paidAt);case _:
   return null;
 
 }
@@ -225,7 +227,7 @@ return $default(_that.id,_that.name,_that.colourIndex,_that.isOrganiser,_that.jo
 @JsonSerializable()
 
 class _Participant implements Participant {
-  const _Participant({required this.id, required this.name, this.colourIndex = 0, this.isOrganiser = false, this.joinOrder = 0, this.status = 'invited', this.shareMinor, this.claimText, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) this.claimedAt});
+  const _Participant({required this.id, required this.name, this.colourIndex = 0, this.isOrganiser = false, this.joinOrder = 0, this.status = 'invited', this.shareMinor, this.claimText, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) this.claimedAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) this.linkOpenedAt, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) this.paidAt});
   factory _Participant.fromJson(Map<String, dynamic> json) => _$ParticipantFromJson(json);
 
 @override final  String id;
@@ -239,6 +241,8 @@ class _Participant implements Participant {
 /// the bill instead, or the organiser claimed for them.
 @override final  String? claimText;
 @override@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) final  DateTime? claimedAt;
+@override@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) final  DateTime? linkOpenedAt;
+@override@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) final  DateTime? paidAt;
 
 /// Create a copy of Participant
 /// with the given fields replaced by the non-null parameter values.
@@ -253,18 +257,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Participant&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.colourIndex, colourIndex) || other.colourIndex == colourIndex)&&(identical(other.isOrganiser, isOrganiser) || other.isOrganiser == isOrganiser)&&(identical(other.joinOrder, joinOrder) || other.joinOrder == joinOrder)&&(identical(other.status, status) || other.status == status)&&(identical(other.shareMinor, shareMinor) || other.shareMinor == shareMinor)&&(identical(other.claimText, claimText) || other.claimText == claimText)&&(identical(other.claimedAt, claimedAt) || other.claimedAt == claimedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Participant&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.colourIndex, colourIndex) || other.colourIndex == colourIndex)&&(identical(other.isOrganiser, isOrganiser) || other.isOrganiser == isOrganiser)&&(identical(other.joinOrder, joinOrder) || other.joinOrder == joinOrder)&&(identical(other.status, status) || other.status == status)&&(identical(other.shareMinor, shareMinor) || other.shareMinor == shareMinor)&&(identical(other.claimText, claimText) || other.claimText == claimText)&&(identical(other.claimedAt, claimedAt) || other.claimedAt == claimedAt)&&(identical(other.linkOpenedAt, linkOpenedAt) || other.linkOpenedAt == linkOpenedAt)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,name,colourIndex,isOrganiser,joinOrder,status,shareMinor,claimText,claimedAt);
+    return Object.hash(runtimeType,id,name,colourIndex,isOrganiser,joinOrder,status,shareMinor,claimText,claimedAt,linkOpenedAt,paidAt);
 }
 
 @override
 String toString() {
-    return 'Participant(id: $id, name: $name, colourIndex: $colourIndex, isOrganiser: $isOrganiser, joinOrder: $joinOrder, status: $status, shareMinor: $shareMinor, claimText: $claimText, claimedAt: $claimedAt)';
+    return 'Participant(id: $id, name: $name, colourIndex: $colourIndex, isOrganiser: $isOrganiser, joinOrder: $joinOrder, status: $status, shareMinor: $shareMinor, claimText: $claimText, claimedAt: $claimedAt, linkOpenedAt: $linkOpenedAt, paidAt: $paidAt)';
 }
 
 
@@ -275,7 +279,7 @@ abstract mixin class _$ParticipantCopyWith<$Res> implements $ParticipantCopyWith
   factory _$ParticipantCopyWith(_Participant value, $Res Function(_Participant) _then) = __$ParticipantCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, int colourIndex, bool isOrganiser, int joinOrder, String status, int? shareMinor, String? claimText,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? claimedAt
+ String id, String name, int colourIndex, bool isOrganiser, int joinOrder, String status, int? shareMinor, String? claimText,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? claimedAt,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? linkOpenedAt,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime? paidAt
 });
 
 
@@ -292,7 +296,7 @@ class __$ParticipantCopyWithImpl<$Res>
 
 /// Create a copy of Participant
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? colourIndex = null,Object? isOrganiser = null,Object? joinOrder = null,Object? status = null,Object? shareMinor = freezed,Object? claimText = freezed,Object? claimedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? colourIndex = null,Object? isOrganiser = null,Object? joinOrder = null,Object? status = null,Object? shareMinor = freezed,Object? claimText = freezed,Object? claimedAt = freezed,Object? linkOpenedAt = freezed,Object? paidAt = freezed,}) {
   return _then(_Participant(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -303,6 +307,8 @@ as int,status: null == status ? _self.status : status // ignore: cast_nullable_t
 as String,shareMinor: freezed == shareMinor ? _self.shareMinor : shareMinor // ignore: cast_nullable_to_non_nullable
 as int?,claimText: freezed == claimText ? _self.claimText : claimText // ignore: cast_nullable_to_non_nullable
 as String?,claimedAt: freezed == claimedAt ? _self.claimedAt : claimedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,linkOpenedAt: freezed == linkOpenedAt ? _self.linkOpenedAt : linkOpenedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,paidAt: freezed == paidAt ? _self.paidAt : paidAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }

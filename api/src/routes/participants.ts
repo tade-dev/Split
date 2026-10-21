@@ -135,13 +135,18 @@ export function participantsRouter(deps: ParticipantsDeps): Router {
           if (friends.length === 0) {
             throw new ApiError(409, 'SPLIT_STATE_INVALID', 'Add at least one friend first.');
           }
-          tx.update(ref, { status: 'claiming', updatedAt: FieldValue.serverTimestamp() });
         }
         const links = friends.map((p) => ({
           participantId: p.id,
           name: p.name,
           url: shareUrl(deps.env.PUBLIC_BASE_URL, deps.env.LINK_SECRET, organiserId, split.id, p.id),
         }));
+        // Cached for the Tracker's Copy link and Preview (plan Task 11).
+        tx.update(ref, {
+          ...(split.status === 'draft' ? { status: 'claiming' } : {}),
+          links: Object.fromEntries(links.map((l) => [l.participantId, l.url])),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
         return { links, groupMessage: groupMessage(split, links) };
       });
       res.json(out);

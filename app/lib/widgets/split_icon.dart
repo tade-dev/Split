@@ -34,6 +34,7 @@ abstract final class SplitIcons {
   static const clock = HugeIcons.strokeRoundedClock01;
   static const alert = HugeIcons.strokeRoundedAlertCircle;
   static const info = HugeIcons.strokeRoundedInformationCircle;
+  static const more = HugeIcons.strokeRoundedMoreVertical;
 }
 
 /// Drop-in for `Icon`: picks up size and colour from the surrounding

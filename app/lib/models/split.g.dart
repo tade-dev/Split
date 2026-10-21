@@ -142,6 +142,11 @@ _SplitDoc _$SplitDocFromJson(Map<String, dynamic> json) => _SplitDoc(
   computed: json['computed'] == null
       ? null
       : Computed.fromJson(json['computed'] as Map<String, dynamic>),
+  links:
+      (json['links'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ) ??
+      const <String, String>{},
   createdAt: dateTimeFromJson(json['createdAt']),
   updatedAt: dateTimeFromJson(json['updatedAt']),
 );
@@ -160,6 +165,7 @@ Map<String, dynamic> _$SplitDocToJson(_SplitDoc instance) => <String, dynamic>{
   'rules': instance.rules.toJson(),
   'organiserParticipantId': instance.organiserParticipantId,
   'computed': instance.computed?.toJson(),
+  'links': instance.links,
   'createdAt': dateTimeToJson(instance.createdAt),
   'updatedAt': dateTimeToJson(instance.updatedAt),
 };

@@ -56,7 +56,7 @@ void main() {
 
   group('ShareStatusPill morph', () {
     testWidgets('both labels are on screen mid-morph, cross-fading', (tester) async {
-      await tester.pumpWidget(_wrap('link_sent'));
+      await tester.pumpWidget(_wrap('link_opened'));
       await tester.pumpWidget(_wrap('paid'));
       await tester.pump(const Duration(milliseconds: 60));
       expect(find.byType(Text), findsNWidgets(2));
@@ -66,7 +66,7 @@ void main() {
     });
 
     testWidgets('the background tweens rather than cutting', (tester) async {
-      await tester.pumpWidget(_wrap('link_sent'));
+      await tester.pumpWidget(_wrap('link_opened'));
       final before = _pillColour(tester);
       await tester.pumpWidget(_wrap('paid'));
       await tester.pumpAndSettle();
@@ -75,7 +75,7 @@ void main() {
       expect(after, isNot(before));
 
       // Half way through, the colour is somewhere between the two.
-      await tester.pumpWidget(_wrap('link_sent'));
+      await tester.pumpWidget(_wrap('link_opened'));
       await tester.pumpAndSettle();
       await tester.pumpWidget(_wrap('paid'));
       await tester.pump(const Duration(milliseconds: 100));
@@ -88,7 +88,7 @@ void main() {
       await tester.pumpWidget(_wrap('paid'));
       await tester.pumpAndSettle();
       final short = _width(tester);
-      await tester.pumpWidget(_wrap('awaiting_deposit'));
+      await tester.pumpWidget(_wrap('paid_cash'));
       await tester.pumpAndSettle();
       expect(_width(tester), greaterThan(short));
     });
@@ -103,13 +103,13 @@ void main() {
       await tester.pumpWidget(_wrap('paid', reduce: true));
       await tester.pumpAndSettle();
       final short = _width(tester);
-      await tester.pumpWidget(_wrap('awaiting_deposit', reduce: true));
+      await tester.pumpWidget(_wrap('paid_cash', reduce: true));
       await tester.pump();
       expect(_width(tester), greaterThan(short));
     });
 
     testWidgets('still cross-fades the label', (tester) async {
-      await tester.pumpWidget(_wrap('link_sent', reduce: true));
+      await tester.pumpWidget(_wrap('link_opened', reduce: true));
       await tester.pumpAndSettle();
       await tester.pumpWidget(_wrap('paid', reduce: true));
       await tester.pump(const Duration(milliseconds: 40));
@@ -119,7 +119,7 @@ void main() {
     });
 
     testWidgets('does not scale the arriving label', (tester) async {
-      await tester.pumpWidget(_wrap('link_sent', reduce: true));
+      await tester.pumpWidget(_wrap('link_opened', reduce: true));
       await tester.pumpAndSettle();
       await tester.pumpWidget(_wrap('paid', reduce: true));
       await tester.pump(const Duration(milliseconds: 40));

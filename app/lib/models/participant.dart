@@ -5,8 +5,8 @@ import '../core/firestore_time.dart';
 part 'participant.freezed.dart';
 part 'participant.g.dart';
 
-/// organisers/{uid}/splits/{splitId}/participants/{id}. The fields Week A
-/// reads; the payment and nudge fields of spec §2 join with the Tracker.
+/// organisers/{uid}/splits/{splitId}/participants/{id}. The fields the app
+/// reads; the nudge fields of spec §2 join in Week C.
 @freezed
 abstract class Participant with _$Participant {
   const factory Participant({
@@ -23,6 +23,10 @@ abstract class Participant with _$Participant {
     String? claimText,
     @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)
     DateTime? claimedAt,
+    @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+    DateTime? linkOpenedAt,
+    @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+    DateTime? paidAt,
   }) = _Participant;
 
   factory Participant.fromJson(Map<String, dynamic> json) => _$ParticipantFromJson(json);

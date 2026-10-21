@@ -16,6 +16,8 @@ _Participant _$ParticipantFromJson(Map<String, dynamic> json) => _Participant(
   shareMinor: (json['shareMinor'] as num?)?.toInt(),
   claimText: json['claimText'] as String?,
   claimedAt: dateTimeFromJson(json['claimedAt']),
+  linkOpenedAt: dateTimeFromJson(json['linkOpenedAt']),
+  paidAt: dateTimeFromJson(json['paidAt']),
 );
 
 Map<String, dynamic> _$ParticipantToJson(_Participant instance) =>
@@ -29,4 +31,6 @@ Map<String, dynamic> _$ParticipantToJson(_Participant instance) =>
       'shareMinor': instance.shareMinor,
       'claimText': instance.claimText,
       'claimedAt': dateTimeToJson(instance.claimedAt),
+      'linkOpenedAt': dateTimeToJson(instance.linkOpenedAt),
+      'paidAt': dateTimeToJson(instance.paidAt),
     };

@@ -8,7 +8,7 @@ import 'features/split/claims_screen.dart';
 import 'features/split/people_screen.dart';
 import 'features/split/breakdown_screen.dart';
 import 'features/split/rules_screen.dart';
-import 'features/split/tracker_placeholder_screen.dart';
+import 'features/split/tracker_screen.dart';
 import 'features/split/receipt_screen.dart';
 
 /// Push for further along the task, sheet for something that sits over it
@@ -54,7 +54,7 @@ final appRouter = GoRouter(
     // Last, so /split/reading above wins over the id.
     GoRoute(
       path: '/split/:id',
-      pageBuilder: (_, s) => splitPushPage(s, TrackerPlaceholderScreen(splitId: s.pathParameters['id']!)),
+      pageBuilder: (_, s) => splitPushPage(s, TrackerScreen(splitId: s.pathParameters['id']!)),
     ),
   ],
 );

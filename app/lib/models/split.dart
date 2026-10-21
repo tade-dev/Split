@@ -127,6 +127,10 @@ abstract class SplitDoc with _$SplitDoc {
     @Default(Rules()) Rules rules,
     @Default('') String organiserParticipantId,
     Computed? computed,
+
+    /// Each friend's share link by participant id, written by *open*. The
+    /// Tracker's *Copy link* and *Preview* read it.
+    @Default(<String, String>{}) Map<String, String> links,
     @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)
     DateTime? createdAt,
     @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)
