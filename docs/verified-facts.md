@@ -34,11 +34,11 @@ Split builds on, is `tade-dev/sorted` `docs/verified-facts.md` at `902dc25`.
   `{"scanned":0,"nudged":0,"skipped":0}`. **No scheduled run had fired by
   20:38 UTC**, three hours later; see *Still unverified*.
 
-- **`api/render.yaml` is on `plan: free` (decided 2026-10-20)**, because
-  `starter` asks for a payment method before the Blueprint will create. This
-  departs from spec §4 / risk 6. Move to `starter` (or apply the hackathon's
-  Render credits) before PayPal payments go live in Week B: a sleeping
-  service drops webhooks and cannot run the sweeps.
+- **Render is on `starter` (2026-10-21).** It started on `plan: free` on
+  2026-10-20, because `starter` needs a payment method before the Blueprint
+  will create. Tade moved the service to `starter` before PayPal payments go
+  live, and `api/render.yaml` now says so. A sleeping service would drop
+  webhooks and could not run the sweeps.
 
 ## Firebase
 
