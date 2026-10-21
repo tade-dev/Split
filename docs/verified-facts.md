@@ -77,17 +77,27 @@ sandbox account).
   through the hosted *Try a sample bill*: 10 lines, Lager x3 as qty 3 /
   £16.50, the 12.5% service charge (£17.19) found, and a total of £154.69
   with no blocking question. One receipt, one model; not the full spike.
-- The full spike (plan Task 7) is still to run: `api/test/extract-receipt.live.test.ts`
-  once each for `gpt-5.5`, `gpt-5.4-mini` and `gpt-5-mini`, one row per model
-  here. It needs `OPENAI_API_KEY` in `api/.env`. `OPENAI_VISION_MODEL` stays
-  `gpt-5.5` until then.
+- **Receipt model spike (plan Task 7), run 2026-10-21** with
+  `api/test/extract-receipt.live.test.ts` against the four sample receipts.
+  Times are per receipt, in ms:
+
+  | Model | Little Bao House | Brunch (discount) | Pub (no service) | Long curry (2 photos) | Result |
+  |---|---|---|---|---|---|
+  | `gpt-5.5` | 5109, 10 lines, £154.69 | 3264, £53.77 | 2684, £88.30 | 4492, 18 lines, £193.84 | **4/4 clean** |
+  | `gpt-5.4-mini` | 2523, clean | 2078, clean | 2098, clean | 2278, **20 lines** | 3/4: counted the photo overlap twice, "Items add up to £214.74 but the bill says £193.84" |
+  | `gpt-5-mini` | 14286, clean | 25065, clean | 11932, clean | 21162, clean | 4/4 clean, 3–8× slower |
+
+  All three read Lager x3 as qty 3 / 1650. **`OPENAI_VISION_MODEL` stays
+  pinned to `gpt-5.5`**: the only model both correct on all four and fast.
+  `gpt-5.4-mini`'s miss was caught by the add-up check, as designed, but it
+  would block the organiser on every long bill.
 
 ## Still unverified
 
-- That the sweeps' cron schedule fires. Only the manual run is proven. Check
-  `gh run list --workflow sweeps.yml` for `schedule` events.
+- How often the sweeps really run. Scheduled runs started firing on
+  2026-10-20 (20:52, 21:31, 23:41, 00:31 UTC, all green), but roughly hourly,
+  not every 10 minutes: GitHub throttles cron on quiet repos. Reconcile may
+  need a tighter trigger once payments are live.
 - Whether PayPal accepts `payee.email_address` set to a personal sandbox
   account. Fallback: the shared sandbox merchant, stated in the README.
-- Which model reads all four sample receipts reliably (only `gpt-5.5` on
-  Little Bao House is proven).
 - Whether any PayPal webhook arrives for a payee order.
