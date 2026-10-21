@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../core/firestore_time.dart';
+
 part 'participant.freezed.dart';
 part 'participant.g.dart';
 
@@ -15,6 +17,12 @@ abstract class Participant with _$Participant {
     @Default(0) int joinOrder,
     @Default('invited') String status,
     int? shareMinor,
+
+    /// What they typed on their link, verbatim. Null when they picked from
+    /// the bill instead, or the organiser claimed for them.
+    String? claimText,
+    @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)
+    DateTime? claimedAt,
   }) = _Participant;
 
   factory Participant.fromJson(Map<String, dynamic> json) => _$ParticipantFromJson(json);

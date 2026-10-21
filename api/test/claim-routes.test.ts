@@ -208,6 +208,7 @@ describe('POST /v1/s/.../claim/confirm', () => {
   });
 });
 
+const organiserId = async (splitId: string) => (await db.doc(`organisers/kemi/splits/${splitId}`).get()).get('organiserParticipantId') as string;
 const as = (t: request.Test) => t.set('Authorization', 'Bearer kemi');
 
 describe('POST /v1/splits/:id/claims/message', () => {
@@ -271,6 +272,8 @@ describe('PATCH /v1/splits/:id/claims', () => {
     const { splitId } = await opened();
     const patch = (body: object) => as(request(app()).patch(`/v1/splits/${splitId}/claims`)).send(body);
     expect((await patch({ lineId: 'lager-8', claims: [{ participantId: 'josh', weight: 4 }] })).status).toBe(400);
+    const everyone = ['josh', 'amaka', 'dan'].map((participantId) => ({ participantId, weight: 1 }));
+    expect((await patch({ lineId: 'lager-8', claims: [...everyone, { participantId: (await organiserId(splitId)), weight: 1 }], shared: true })).status).toBe(200);
     expect((await patch({ lineId: 'lager-8', claims: [{ participantId: 'nobody', weight: 1 }] })).status).toBe(404);
     expect((await patch({ lineId: 'ghost-1', claims: [] })).status).toBe(404);
   });

@@ -4,8 +4,9 @@ import 'core/motion/split_motion.dart';
 import 'features/home/home_screen.dart';
 import 'features/scan/reading_screen.dart';
 import 'features/scan/scan_screen.dart';
-import 'features/split/claims_placeholder_screen.dart';
+import 'features/split/claims_screen.dart';
 import 'features/split/people_screen.dart';
+import 'features/split/rules_placeholder_screen.dart';
 import 'features/split/receipt_screen.dart';
 
 /// Push for further along the task, sheet for something that sits over it
@@ -38,7 +39,11 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/split/:id/claims',
-      pageBuilder: (_, s) => splitPushPage(s, ClaimsPlaceholderScreen(splitId: s.pathParameters['id']!)),
+      pageBuilder: (_, s) => splitPushPage(s, ClaimsScreen(splitId: s.pathParameters['id']!)),
+    ),
+    GoRoute(
+      path: '/split/:id/rules',
+      pageBuilder: (_, s) => splitPushPage(s, RulesPlaceholderScreen(splitId: s.pathParameters['id']!)),
     ),
   ],
 );

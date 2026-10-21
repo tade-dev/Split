@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../core/api_client.dart';
+import '../models/ambiguity.dart';
 import '../models/participant.dart';
 import '../models/split.dart';
 
@@ -9,6 +10,13 @@ typedef Photo = ({List<int> bytes, String filename});
 /// What POST /v1/splits/:id/open returns: one signed link per friend and the
 /// text to paste in the group chat.
 typedef OpenedSplit = ({List<({String participantId, String name, String url})> links, String groupMessage});
+
+/// What POST /v1/splits/:id/claims/message wrote, and what it could not.
+typedef ClaimResult = ({
+  List<({String lineId, String participantId, String name, int weight, String portionLabel})> applied,
+  List<Ambiguity> problems,
+  List<String> ignored,
+});
 
 /// Every write to a split. Named so tests can fake it without Dio or a token.
 abstract class SplitsApi {
@@ -32,6 +40,14 @@ abstract class SplitsApi {
 
   /// POST /v1/splits/:id/open. Moves the split to claiming; safe to repeat.
   Future<OpenedSplit> open(String splitId);
+
+  /// POST /v1/splits/:id/claims/message. The organiser says who had what;
+  /// it is written at once and the claims arrive on the stream.
+  Future<ClaimResult> claimMessage(String splitId, String message, {String? participantId});
+
+  /// PATCH /v1/splits/:id/claims. Replaces one line's claims, which is how
+  /// *Share between …* resolves.
+  Future<void> patchClaims(String splitId, String lineId, List<Claim> claims, {bool? shared});
 }
 
 class HttpSplitsApi implements SplitsApi {
@@ -75,6 +91,36 @@ class HttpSplitsApi implements SplitsApi {
       groupMessage: body['groupMessage'] as String,
     );
   }
+
+  @override
+  Future<ClaimResult> claimMessage(String splitId, String message, {String? participantId}) async {
+    final body = await _client.postJson('/v1/splits/$splitId/claims/message', {
+      'participantId': participantId,
+      'message': message,
+    });
+    return (
+      applied: [
+        for (final a in (body['applied'] as List).cast<Map<String, dynamic>>())
+          (
+            lineId: a['lineId'] as String,
+            participantId: a['participantId'] as String,
+            name: a['name'] as String,
+            weight: (a['weight'] as num).toInt(),
+            portionLabel: a['portionLabel'] as String? ?? '',
+          ),
+      ],
+      problems: [for (final p in (body['problems'] as List).cast<Map<String, dynamic>>()) Ambiguity.fromJson(p)],
+      ignored: (body['ignored'] as List).cast<String>(),
+    );
+  }
+
+  @override
+  Future<void> patchClaims(String splitId, String lineId, List<Claim> claims, {bool? shared}) =>
+      _client.patchJson('/v1/splits/$splitId/claims', {
+        'lineId': lineId,
+        'claims': [for (final c in claims) {'participantId': c.participantId, 'weight': c.weight}],
+        'shared': ?shared,
+      });
 }
 
 /// Reads go straight to Firestore so the screens update live; writes go

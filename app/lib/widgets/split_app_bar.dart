@@ -17,6 +17,7 @@ class SplitAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.close = false,
     this.onBack,
     this.alwaysFallback = false,
+    this.actions,
   });
 
   final String? title;
@@ -33,6 +34,9 @@ class SplitAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Go to [fallback] even when a pop is possible (e.g. after an order is
   /// sent, back should not return to its editable draft).
   final bool alwaysFallback;
+
+  /// Trailing buttons, e.g. Claim's *Totals*.
+  final List<Widget>? actions;
 
   @override
   Size get preferredSize => const Size.fromHeight(60);
@@ -62,6 +66,7 @@ class SplitAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       title: title == null ? null : Text(title!),
+      actions: actions,
     );
   }
 }

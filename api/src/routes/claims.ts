@@ -123,8 +123,9 @@ export function claimsRouter(deps: ClaimsDeps): Router {
         if (ids.some((id) => !participants.some((p) => p.id === id))) throw new ApiError(404, 'NOT_FOUND', 'That person is not in this split.');
         const total = body.claims.reduce((t, c) => t + c.weight, 0);
         // A single dish can go to everyone who shared it; more than one can
-        // never be claimed past its qty.
-        if (line.qty > 1 ? total > line.qty : body.claims.some((c) => c.weight !== 1)) {
+        // never be claimed past its qty. A shared line is split by weight
+        // whatever the qty, so "Share between all 5" fits three lagers.
+        if (!body.shared && (line.qty > 1 ? total > line.qty : body.claims.some((c) => c.weight !== 1))) {
           throw new ApiError(400, 'VALIDATION_FAILED', `There ${line.qty === 1 ? 'is 1' : `are ${line.qty}`} of the ${line.name.toLowerCase()} on the bill.`);
         }
         const claims: Record<string, LineClaims> = {

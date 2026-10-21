@@ -57,6 +57,12 @@ class _RecordingApi implements SplitsApi {
     rulesPatches.add(body);
     return _fixed;
   }
+
+  @override
+  Future<ClaimResult> claimMessage(String splitId, String message, {String? participantId}) => throw UnimplementedError();
+
+  @override
+  Future<void> patchClaims(String splitId, String lineId, List<Claim> claims, {bool? shared}) => throw UnimplementedError();
 }
 
 late StreamController<SplitDoc?> _stream;
