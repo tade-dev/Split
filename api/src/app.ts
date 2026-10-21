@@ -60,7 +60,7 @@ export function createApp(deps: AppDeps): express.Express {
     '/v1',
     splitsRouter({ db: deps.db, verify: deps.verify, transport: deps.transport, model: deps.env.OPENAI_VISION_MODEL }),
   );
-  app.use('/v1', friendRouter({ env: deps.env, db: deps.db, transport: deps.transport, model: deps.env.OPENAI_VISION_MODEL }));
+  app.use('/v1', friendRouter({ env: deps.env, db: deps.db, transport: deps.transport, model: deps.env.OPENAI_VISION_MODEL, paypal: deps.paypal }));
   app.use(
     '/v1',
     claimsRouter({ db: deps.db, verify: deps.verify, transport: deps.transport, model: deps.env.OPENAI_VISION_MODEL }),

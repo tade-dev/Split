@@ -38,8 +38,11 @@ function payRows(split: SplitDoc, participantId: string): { label: string; minor
   const b = split.computed?.ok ? split.computed.perParticipant[participantId] : undefined;
   if (!b) return [];
   const service = split.receipt.serviceChargeLabel ? `Service charge, ${split.receipt.serviceChargeLabel}` : 'Service charge';
+  // "Spicy miso ramen, lager, pork bao", as FriendPay lists them.
+  const names = b.lines.map((l) => split.receipt.lines.find((r) => r.id === l.lineId)?.name).filter((n): n is string => Boolean(n));
+  const had = names.length === 0 ? 'What you had' : names.map((n, i) => (i === 0 ? n : n.toLowerCase())).join(', ');
   return [
-    { label: 'What you had', minor: b.itemsMinor },
+    { label: had, minor: b.itemsMinor },
     { label: 'Your share of what is on the group', minor: b.sharedFromOnUsMinor },
     { label: service, minor: b.serviceMinor },
     { label: 'Tip', minor: b.tipMinor },
