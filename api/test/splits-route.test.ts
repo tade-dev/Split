@@ -106,6 +106,38 @@ describe('POST /v1/splits/scan', () => {
   });
 });
 
+describe('POST /v1/splits', () => {
+  it('makes a blank draft to type the bill into', async () => {
+    await db.doc('organisers/kemi').set({ displayName: 'Kemi' });
+    const res = await request(app()).post('/v1/splits').set('Authorization', 'Bearer kemi').send({});
+    expect(res.status).toBe(201);
+    expect(res.body.split).toMatchObject({
+      status: 'draft', title: 'Your bill', extractionModel: 'manual',
+      receipt: { lines: [], printedTotalMinor: null },
+    });
+    expect(res.body.split.receiptAmbiguities).toEqual([
+      expect.objectContaining({ field: 'lines', kind: 'missing', blocking: true }),
+      expect.objectContaining({ field: 'printedTotalMinor', kind: 'missing', blocking: true, question: "What's the total on the bill?" }),
+    ]);
+    const people = await db.collection(`organisers/kemi/splits/${res.body.split.id}/participants`).get();
+    expect(people.docs.map((d) => d.get('name'))).toEqual(['Kemi']);
+  });
+
+  it('clears both questions once lines and a matching total are in', async () => {
+    const { body } = await request(app()).post('/v1/splits').set('Authorization', 'Bearer kemi').send({});
+    const res = await request(app()).patch(`/v1/splits/${body.split.id}/receipt`).set('Authorization', 'Bearer kemi')
+      .send({ addLines: [{ name: 'Ramen', qty: 1, lineTotalMinor: 1500 }, { name: 'Lager', qty: 2, lineTotalMinor: 1100 }], printedTotalMinor: 2600 });
+    expect(res.status).toBe(200);
+    expect(res.body.split.receipt.lines.map((l: { id: string }) => l.id)).toEqual(['ramen-0', 'lager-1']);
+    expect(res.body.split.receiptAmbiguities).toEqual([]);
+  });
+
+  it('refuses unknown fields and needs a signed-in organiser', async () => {
+    expect((await request(app()).post('/v1/splits').set('Authorization', 'Bearer kemi').send({ lines: [] })).status).toBe(400);
+    expect((await request(app()).post('/v1/splits').send({})).status).toBe(401);
+  });
+});
+
 describe('PATCH /v1/splits/:id/receipt', () => {
   it('fixing a misread line clears the mismatch and recomputes', async () => {
     const split = await scan({ ...reading, lines: [reading.lines[0]!, { name: 'Lager', qty: 3, lineTotalMinor: 1560 }] });

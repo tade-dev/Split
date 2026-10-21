@@ -11,6 +11,9 @@ abstract class SplitsApi {
   /// POST /v1/splits/scan. 3-10 seconds: the Reading screen covers it.
   Future<SplitDoc> scan(List<Photo> photos);
 
+  /// POST /v1/splits. A blank draft to type the bill into when a read fails.
+  Future<SplitDoc> createEmpty();
+
   /// PATCH /v1/splits/:id/receipt. Send only what changed.
   Future<SplitDoc> patchReceipt(String splitId, Map<String, Object?> body);
 
@@ -28,6 +31,9 @@ class HttpSplitsApi implements SplitsApi {
   @override
   Future<SplitDoc> scan(List<Photo> photos) async =>
       _split(await _client.postImages('/v1/splits/scan', photos));
+
+  @override
+  Future<SplitDoc> createEmpty() async => _split(await _client.postJson('/v1/splits', const <String, Object?>{}));
 
   @override
   Future<SplitDoc> patchReceipt(String splitId, Map<String, Object?> body) async =>

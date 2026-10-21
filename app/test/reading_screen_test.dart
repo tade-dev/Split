@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:split/core/motion/split_motion.dart';
 import 'package:split/core/theme/split_theme.dart';
+import 'package:split/data/splits_repository.dart';
 import 'package:split/features/scan/reading_screen.dart';
 import 'package:split/models/split.dart';
 import 'package:split/providers/splits_providers.dart';
@@ -26,17 +27,43 @@ class _Controller extends ScanController {
   void set(ScanState next) => state = next;
 }
 
+class _Api implements SplitsApi {
+  _Api(this.blank);
+  final SplitDoc blank;
+  int created = 0;
+
+  @override
+  Future<SplitDoc> createEmpty() async {
+    created++;
+    return blank;
+  }
+
+  @override
+  Future<SplitDoc> scan(List<Photo> photos) => throw UnimplementedError();
+
+  @override
+  Future<SplitDoc> patchReceipt(String splitId, Map<String, Object?> body) => throw UnimplementedError();
+
+  @override
+  Future<SplitDoc> patchRules(String splitId, Map<String, Object?> body) => throw UnimplementedError();
+}
+
 late _Controller _controller;
+late _Api _api;
 
 Widget _app(ScanState initial, {bool reduce = false}) {
   _controller = _Controller(initial);
+  _api = _Api(_bao.copyWith(id: 'blank-1'));
   final router = GoRouter(initialLocation: '/scan', routes: [
     GoRoute(path: '/scan', builder: (_, _) => const Text('scan-route')),
     GoRoute(path: '/split/reading', builder: (_, _) => const ReadingScreen()),
     GoRoute(path: '/split/:id/receipt', builder: (_, s) => Text('receipt ${s.pathParameters['id']}')),
   ]);
   return ProviderScope(
-    overrides: [scanControllerProvider.overrideWith(() => _controller)],
+    overrides: [
+      scanControllerProvider.overrideWith(() => _controller),
+      splitsApiProvider.overrideWithValue(_api),
+    ],
     child: MaterialApp.router(
       theme: splitTheme(),
       routerConfig: router,
@@ -116,6 +143,18 @@ void main() {
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
     expect(find.text('scan-route'), findsOneWidget);
+    expect(_controller.state, isA<ScanIdle>());
+  });
+
+  testWidgets('a failed read offers to type the bill in, which opens a blank receipt', (tester) async {
+    await tester.pumpWidget(_app(const ScanReading(1)));
+    await _openReading(tester);
+    _controller.set(const ScanFailed('Split could not read that reliably.'));
+    await tester.pump();
+    await tester.tap(find.text('Type it in instead'));
+    await tester.pumpAndSettle();
+    expect(_api.created, 1);
+    expect(find.text('receipt blank-1'), findsOneWidget);
     expect(_controller.state, isA<ScanIdle>());
   });
 

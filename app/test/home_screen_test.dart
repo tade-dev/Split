@@ -31,6 +31,9 @@ class _Api implements SplitsApi {
   }
 
   @override
+  Future<SplitDoc> createEmpty() => throw UnimplementedError();
+
+  @override
   Future<SplitDoc> patchReceipt(String splitId, Map<String, Object?> body) => throw UnimplementedError();
 
   @override
