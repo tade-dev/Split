@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/first_run.dart';
 import 'core/theme/split_theme.dart';
 import 'firebase_options.dart';
 import 'providers/organiser_provider.dart';
@@ -10,6 +11,7 @@ import 'router.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await FirstRun.load();
   runApp(const ProviderScope(child: SplitApp()));
 }
 
