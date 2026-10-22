@@ -47,6 +47,7 @@ void main() {
     testWidgets('$path builds $screen', (tester) async {
       await tester.pumpWidget(ProviderScope(
         overrides: [
+          bootstrapProvider.overrideWith((ref) async {}),
           organiserProvider.overrideWith((ref) => Stream.value(const Organiser(id: 'kemi', displayName: 'Kemi'))),
           splitsProvider.overrideWith((ref) => Stream.value(const <SplitDoc>[])),
           splitProvider.overrideWith((ref, id) => Stream.value(SplitDoc(id: id))),

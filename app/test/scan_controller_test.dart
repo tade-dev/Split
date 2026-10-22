@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:split/data/splits_repository.dart';
 import 'package:split/models/split.dart';
+import 'package:split/providers/organiser_provider.dart';
 import 'package:split/providers/splits_providers.dart';
 
 class _FakeApi implements SplitsApi {
@@ -53,7 +54,7 @@ class _FakeApi implements SplitsApi {
 }
 
 ProviderContainer _container(SplitsApi api) {
-  final c = ProviderContainer(overrides: [splitsApiProvider.overrideWithValue(api)]);
+  final c = ProviderContainer(overrides: [splitsApiProvider.overrideWithValue(api), bootstrapProvider.overrideWith((ref) async {})]);
   addTearDown(c.dispose);
   return c;
 }
@@ -94,6 +95,8 @@ void main() {
     final c = _container(api);
     final first = c.read(scanControllerProvider.notifier).read([_photo]);
     await c.read(scanControllerProvider.notifier).read([_photo]);
+    // The first read waits for bootstrap before it scans.
+    await Future<void>.delayed(Duration.zero);
     expect(api.scans, hasLength(1));
     gate.complete(const SplitDoc(id: 's1'));
     await first;

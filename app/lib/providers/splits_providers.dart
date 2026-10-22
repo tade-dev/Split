@@ -66,6 +66,8 @@ class ScanController extends Notifier<ScanState> {
     if (state is ScanReading) return;
     state = ScanReading(photos.length);
     try {
+      // A first visit may still be creating the organiser.
+      await ref.read(bootstrapProvider.future);
       state = ScanReady(await ref.read(splitsApiProvider).scan(photos));
     } catch (e) {
       state = ScanFailed(describeApiError(e));
