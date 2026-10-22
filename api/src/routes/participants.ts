@@ -15,8 +15,13 @@ import {
   readSplit,
   toApi,
   type ParticipantDoc,
+  type ParticipantStatus,
   type SplitDoc,
 } from '../domain/splits.js';
+import { settleIfDone } from '../domain/lock.js';
+
+/** Shares the organiser can mark as paid in cash: owing, with no money moving at PayPal. */
+const CASH_FROM: ParticipantStatus[] = ['owes', 'link_opened', 'declined'];
 
 /** Eight colours, the organiser's first, so seven friends at most. */
 export const MAX_FRIENDS = PARTICIPANT_COLOURS - 1;
@@ -115,6 +120,56 @@ export function participantsRouter(deps: ParticipantsDeps): Router {
         return { split: { ...split, claims, rules, computed }, participants: rest };
       });
       res.json(toApi(out));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Spec §4 endpoint 15. The friend paid another way: cash, a bank
+  // transfer. Any PayPal order they still hold is replaced, so a late
+  // approval on it is never captured, and a capture that lands anyway is
+  // flagged for refund by the webhook. Refused while PayPal has money moving.
+  router.post('/splits/:splitId/participants/:participantId/paid-cash', auth, async (req, res, next) => {
+    try {
+      const organiserId = req.organiserId!;
+      const out = await deps.db.runTransaction(async (tx) => {
+        const { ref, split, participants } = await readSplit(tx, deps.db, organiserId, String(req.params.splitId));
+        assertStatus(split, ['collecting'], 'mark a share paid');
+        const person = participants.find((p) => p.id === req.params.participantId);
+        if (!person) throw new ApiError(404, 'NOT_FOUND', 'That person is not in this split.');
+        if (!CASH_FROM.includes(person.status)) {
+          throw new ApiError(409, 'SPLIT_STATE_INVALID', person.status === 'processing' || person.status === 'pending'
+            ? `PayPal is still confirming ${person.name}'s payment.`
+            : `${person.name} has nothing left to pay.`, { status: person.status });
+        }
+        const settled = await settleIfDone(tx, ref, { participantId: person.id, status: 'paid_cash' });
+        const personRef = ref.collection('participants').doc(person.id);
+        tx.update(personRef, {
+          status: 'paid_cash',
+          paidAt: FieldValue.serverTimestamp(),
+          ...(person.paypalOrderId
+            ? {
+                paypalOrderId: null,
+                approvalUrl: null,
+                paypalOrderCreatedAt: null,
+                supersededPaypalOrderIds: FieldValue.arrayUnion(person.paypalOrderId),
+              }
+            : {}),
+        });
+        tx.set(personRef.collection('paymentEvents').doc(`paid-cash-${person.id}`), {
+          id: `paid-cash-${person.id}`,
+          eventType: 'paid_cash',
+          paypalResourceId: person.paypalOrderId,
+          amountMinor: person.shareMinor,
+          raw: { source: 'organiser', from: person.status },
+          signatureVerified: false,
+          receivedAt: FieldValue.serverTimestamp(),
+          processedAt: FieldValue.serverTimestamp(),
+          processingError: null,
+        });
+        return { status: 'paid_cash' as const, settled };
+      });
+      res.json(out);
     } catch (err) {
       next(err);
     }

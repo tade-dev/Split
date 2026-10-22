@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/api_client.dart';
 import '../../core/money.dart';
 import '../../core/motion/paid_announcer.dart';
 import '../../core/motion/paid_pop.dart';
@@ -19,6 +20,10 @@ import '../../widgets/split_toast.dart';
 import 'share_status_pill.dart';
 
 bool _paid(Participant p) => p.status == 'paid' || p.status == 'paid_cash';
+
+/// Owing, with no money moving at PayPal: the shares the organiser may mark
+/// as paid in cash (endpoint 15).
+bool _cashable(Participant p) => const {'owes', 'link_opened', 'declined'}.contains(p.status);
 
 /// Who has paid (Tracker.dc.html). Rows come straight from the participants
 /// stream, so a friend's payment flips their row in front of the organiser
@@ -49,6 +54,26 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
   Future<void> _copy(Participant p, String url) async {
     await Clipboard.setData(ClipboardData(text: url));
     if (mounted) SplitToast.success(context, "Copied ${p.name}'s link");
+  }
+
+  Future<void> _markCash(Participant p) async {
+    final sure = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Mark ${p.name} as paid?'),
+        content: Text("Use this when ${p.name} paid you ${formatGbp(p.shareMinor ?? 0)} another way, like cash or a bank transfer. Their PayPal link stops working."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Not yet')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Mark as paid')),
+        ],
+      ),
+    );
+    if (sure != true || !mounted) return;
+    try {
+      await ref.read(splitsApiProvider).markPaidCash(widget.splitId, p.id);
+    } catch (e) {
+      if (mounted) SplitToast.error(context, describeApiError(e));
+    }
   }
 
   Future<void> _preview(String url) async {
@@ -115,6 +140,7 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
                 link: split?.links[p.id],
                 onCopy: _copy,
                 onPreview: _preview,
+                onMarkCash: _markCash,
               ),
           ],
         ),
@@ -124,12 +150,13 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
 }
 
 class _PersonRow extends StatelessWidget {
-  const _PersonRow({required this.person, required this.link, required this.onCopy, required this.onPreview});
+  const _PersonRow({required this.person, required this.link, required this.onCopy, required this.onPreview, required this.onMarkCash});
 
   final Participant person;
   final String? link;
   final Future<void> Function(Participant p, String url) onCopy;
   final Future<void> Function(String url) onPreview;
+  final Future<void> Function(Participant p) onMarkCash;
 
   @override
   Widget build(BuildContext context) {
@@ -172,15 +199,20 @@ class _PersonRow extends StatelessWidget {
               ),
             ),
             Text(formatGbp(p.shareMinor ?? 0), style: text.titleMedium),
-            if (link != null && !p.isOrganiser)
+            if (!p.isOrganiser && (link != null || _cashable(p)))
               PopupMenuButton<String>(
                 key: Key('menu-${p.id}'),
                 tooltip: 'More for ${p.name}',
                 icon: SplitIcon(SplitIcons.more, size: 20, color: c.muted),
-                onSelected: (choice) => choice == 'copy' ? onCopy(p, link) : onPreview(link),
+                onSelected: (choice) => switch (choice) {
+                  'copy' => onCopy(p, link!),
+                  'preview' => onPreview(link!),
+                  _ => onMarkCash(p),
+                },
                 itemBuilder: (_) => [
-                  const PopupMenuItem(value: 'copy', child: Text('Copy link')),
-                  PopupMenuItem(value: 'preview', child: Text('Preview as ${p.name}')),
+                  if (link != null) const PopupMenuItem(value: 'copy', child: Text('Copy link')),
+                  if (link != null) PopupMenuItem(value: 'preview', child: Text('Preview as ${p.name}')),
+                  if (_cashable(p)) const PopupMenuItem(value: 'cash', child: Text('Mark as paid in cash')),
                 ],
               )
             else

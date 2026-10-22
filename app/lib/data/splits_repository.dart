@@ -61,6 +61,9 @@ abstract class SplitsApi {
 
   /// POST /v1/splits/:id/unlock. Refused once anyone has started paying.
   Future<void> unlock(String splitId);
+
+  /// Endpoint 15: the friend paid in cash or by bank transfer.
+  Future<void> markPaidCash(String splitId, String participantId);
 }
 
 class HttpSplitsApi implements SplitsApi {
@@ -152,6 +155,10 @@ class HttpSplitsApi implements SplitsApi {
 
   @override
   Future<void> unlock(String splitId) => _client.postJson('/v1/splits/$splitId/unlock', const <String, Object?>{});
+
+  @override
+  Future<void> markPaidCash(String splitId, String participantId) =>
+      _client.postJson('/v1/splits/$splitId/participants/$participantId/paid-cash', const <String, Object?>{});
 }
 
 /// Reads go straight to Firestore so the screens update live; writes go

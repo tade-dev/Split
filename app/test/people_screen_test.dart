@@ -74,6 +74,9 @@ class _Api implements SplitsApi {
 
   @override
   Future<void> unlock(String splitId) => throw UnimplementedError();
+
+  @override
+  Future<void> markPaidCash(String splitId, String participantId) => throw UnimplementedError();
 }
 
 late _Api _api;
