@@ -15,6 +15,7 @@ import { splitsRouter } from './routes/splits.js';
 import { participantsRouter } from './routes/participants.js';
 import { friendRouter } from './routes/friend.js';
 import { claimsRouter } from './routes/claims.js';
+import { nudgeRouter } from './routes/nudge.js';
 
 export type AppDeps = {
   env: Env;
@@ -66,6 +67,10 @@ export function createApp(deps: AppDeps): express.Express {
     claimsRouter({ db: deps.db, verify: deps.verify, transport: deps.transport, model: deps.env.OPENAI_VISION_MODEL }),
   );
   app.use('/v1', participantsRouter({ env: deps.env, db: deps.db, verify: deps.verify }));
+  app.use(
+    '/v1',
+    nudgeRouter({ env: deps.env, db: deps.db, verify: deps.verify, transport: deps.transport, model: deps.env.OPENAI_VISION_MODEL }),
+  );
   app.use(
     '/v1',
     paypalPagesRouter(deps.db, deps.env.LINK_SECRET, deps.paypal),

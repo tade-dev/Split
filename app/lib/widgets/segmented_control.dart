@@ -49,15 +49,16 @@ class SegmentedControl<T> extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: e.key == selected ? c.surface : Colors.transparent,
                         borderRadius: BorderRadius.circular(10),
-                        boxShadow: e.key == selected
-                            ? [
-                                BoxShadow(
-                                  color: c.ink.withValues(alpha: 0.15),
-                                  blurRadius: 3,
-                                  offset: const Offset(0, 1),
-                                ),
-                              ]
-                            : null,
+                        // Same blur either way, only the colour changes: the
+                        // snappy spring overshoots, and lerping a shadow to
+                        // none would take the blur radius below zero.
+                        boxShadow: [
+                          BoxShadow(
+                            color: e.key == selected ? c.ink.withValues(alpha: 0.15) : Colors.transparent,
+                            blurRadius: 3,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
                       ),
                       child: Text(
                         e.value,

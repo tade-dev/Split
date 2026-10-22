@@ -37,9 +37,9 @@ API 228 tests, Flutter 156 tests, `tsc --noEmit` and `flutter analyze` clean.
 | `src/lib/errors.ts` | `src/lib/errors.ts` | Copy | Adds `SPLIT_STATE_INVALID` |
 | `src/lib/image_type.ts` | `src/lib/image_type.ts` | Copy | |
 | `src/ai/client.ts` | `src/ai/client.ts` | Copy | `generateStructured()`, transport and corrective retry untouched |
-| `src/ai/draft_nudge.ts` | `src/ai/draft_nudge.ts` | Adapt | None yet. Still drafts for a buyer's order |
+| `src/ai/draft_nudge.ts` | `src/ai/draft_nudge.ts` | Adapt | Re-prompted for a friend: friendly, cheeky or firm, under 40 words, the friend's own share link exactly once (Week C) |
 | `src/domain/money.ts` | `src/domain/money.ts` | Copy | `allocateLargestRemainder()` is added in plan 1 |
-| `src/domain/nudge.ts` | `src/domain/nudge.ts` | Adapt | None yet |
+| `src/domain/nudge.ts` | `src/domain/nudge.ts` | Adapt | Works on a share: `nudgeRefusal`, `nudgeDue` counted from the lock, snooze (Week C) |
 | `src/domain/links.ts` | `src/domain/invoice.ts` | Adapt | HMAC sign, verify and URL only. The invoice page and invoice numbers are dropped |
 | `src/paypal/client.ts` | `src/paypal/client.ts` | Copy | |
 | `src/paypal/orders.ts` | `src/paypal/orders.ts` | Adapt | Brand name `Split`. Generalised to `createPayPalOrder(ShareOrder)` (Week B Task 9) |
@@ -48,11 +48,11 @@ API 228 tests, Flutter 156 tests, `tsc --noEmit` and `flutter analyze` clean.
 | `src/paypal/buyer_page.ts` | `src/paypal/buyer_page.ts` | Adapt | Wordmark `Split` |
 | `src/routes/webhooks.ts` | `src/routes/webhooks.ts` | Adapt | `locateShare`; ledger and idempotency unchanged (Week B Task 10) |
 | `src/routes/paypal_pages.ts` | `src/routes/paypal_pages.ts` | Adapt | `/invoice/...` route removed. The return page captures and redirects to the friend's page (Week B Task 10) |
-| `src/routes/internal.ts` | `src/routes/internal.ts` | Adapt | `reconcile` and `expire-sweep` walk shares in collecting splits (Week B Task 10). `nudge-sweep` still walks `organisers/*/orders` until Week C |
+| `src/routes/internal.ts` | `src/routes/internal.ts` | Adapt | `reconcile` and `expire-sweep` walk shares in collecting splits (Week B Task 10). `nudge-sweep` walks them too and drafts into `nudge.draftText` (Week C) |
 | `src/routes/health.ts` | `src/routes/health.ts` | Adapt | None |
-| `src/domain/orders.ts` | (deleted) | Transitional | Retired in Week B. `assertShareTransition` in `domain/shares.ts` replaces `assertTransition`; the nudge's order shape is `NudgeOrder` in `domain/nudge.ts` |
+| `src/domain/orders.ts` | (deleted) | Transitional | Retired in Week B. `assertShareTransition` in `domain/shares.ts` replaces `assertTransition`; the nudge works on `NudgeShare` in `domain/nudge.ts` |
 | `src/domain/closing.ts` | (deleted) | Transitional | Retired in Week B. The expiry sweep replaces a share's order instead of closing anything (plan E8) |
-| `src/domain/dates.ts` | (deleted) | Transitional | Retired in Week B. Its two helpers moved into `draft_nudge.ts`, their only user |
+| `src/domain/dates.ts` | (deleted) | Transitional | Retired in Week B. Its helpers are gone; the nudge counts whole days itself |
 | `src/ai/schemas.ts` | `src/ai/schemas.ts` | Transitional | Trimmed to `ambiguitySchema` (Split reuses the shape) and `nudgeDraftSchema` |
 | `package.json`, `package-lock.json` | same | Adapt | Name `split-api`, description. Dependency versions identical |
 | `tsconfig.json`, `vitest.config.ts` | same | Copy | |
@@ -142,6 +142,6 @@ one is picked up:
 | `reconcile.ts`, `webhooks.ts` (`locateShare`), `internal.ts`: participant docs | Week B. Done (Task 10), and the transitional files are gone |
 | `paypal_pages.ts`: return page links back to the friend's page | Week B. Done (Task 10): it redirects there |
 | `buyer_page.ts`: shared layout for every friend page | Week B |
-| `draft_nudge.ts`, `nudge.ts`: nudge a friend | Week C |
+| `draft_nudge.ts`, `nudge.ts`: nudge a friend | Done (Week C) |
 | `ShareStatusPill` participant statuses | Week B (Tracker) |
 | `firebase_options.dart`: Split's own Firebase project | 1, Foundations and money |

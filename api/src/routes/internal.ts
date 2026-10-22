@@ -7,9 +7,10 @@ import type { PayPalFetch } from '../paypal/client.js';
 import { paypalIssue } from '../paypal/events.js';
 import { reconcileShare } from '../paypal/reconcile.js';
 import { DEFAULT_ORDER_EXPIRY_HOURS } from '../env.js';
-import { millis, nudgeDue, type NudgeOrder } from '../domain/nudge.js';
+import { millis, nudgeDue } from '../domain/nudge.js';
+import { shareUrl } from '../domain/links.js';
 import { OPEN_SHARE_STATUSES } from '../domain/shares.js';
-import type { ParticipantDoc, ParticipantStatus } from '../domain/splits.js';
+import type { ParticipantDoc, ParticipantStatus, SplitDoc } from '../domain/splits.js';
 import { draftNudge } from '../ai/draft_nudge.js';
 import type { ChatTransport } from '../ai/client.js';
 import { FieldValue, type QueryDocumentSnapshot } from 'firebase-admin/firestore';
@@ -167,47 +168,58 @@ export function internalRouter(deps: {
     }
   });
 
-  // Finds unpaid links that are due a reminder and drafts one, so the nudge
-  // is already written when the seller opens it. It never sends anything:
-  // the seller copies it into the chat. Orders that already have a draft
-  // waiting are left alone, so an hourly run does not rewrite it under them.
+  // Finds friends whose share is due a reminder and drafts one, so it is
+  // already written when the organiser opens the tracker. It never sends
+  // anything: the organiser copies it into the group chat. A share that
+  // already has a draft waiting is left alone, so an hourly run does not
+  // rewrite it under them.
   router.post('/internal/workflows/nudge-sweep', internalOnly, async (_req, res, next) => {
     const now = (deps.now ?? Date.now)();
     let scanned = 0;
     let nudged = 0;
     let skipped = 0;
     try {
-      const organisers = await deps.db.collection('organisers').get();
-      for (const seller of organisers.docs) {
-        const orders = await seller.ref.collection('orders').where('status', '==', 'link_sent').get();
-        for (const doc of orders.docs) {
-          const order = doc.data() as NudgeOrder & { linkSentAt?: unknown };
-          if (!nudgeDue(order, now)) continue;
-          scanned += 1;
-          if (order.nudge && (order.nudge as { draftText?: unknown }).draftText) { skipped += 1; continue; }
-          const drafted = await draftNudge(
-            {
-              order,
-              approvalUrl: order.approvalUrl!,
-              personaTone: (seller.get('personaTone') as string | undefined) ?? '',
-              tone: 'friendly',
-              priorCount: order.nudge?.count ?? 0,
-              daysUnpaid: Math.floor((now - millis(order.linkSentAt)!) / (24 * 60 * 60 * 1000)),
-            },
-            deps.transport ?? (async () => { throw new Error('no model'); }),
-            deps.model ?? '',
-          );
-          // Here, unlike when the seller asks, the model may decline to chase.
-          if (drafted.shouldSkip) {
-            skipped += 1;
-            await doc.ref.update({ 'nudge.skipReason': drafted.skipReason ?? 'The assistant chose not to chase this one.' });
-            continue;
+      const organisers = await deps.db.collection('organisers').listDocuments();
+      for (const organiser of organisers) {
+        const splits = await organiser.collection('splits').where('status', '==', 'collecting').get();
+        if (splits.empty) continue;
+        const name = ((await organiser.get()).get('displayName') as string | undefined)?.trim() || 'Your friend';
+        for (const split of splits.docs) {
+          const data = split.data() as SplitDoc;
+          const people = await split.ref.collection('participants').where('status', 'in', ['owes', 'link_opened', 'declined']).get();
+          for (const doc of people.docs) {
+            const person = { ...(doc.data() as ParticipantDoc), id: doc.id };
+            if (!nudgeDue(person, data.status, data.lockedAt, now)) continue;
+            scanned += 1;
+            if ((person.nudge as { draftText?: unknown } | undefined)?.draftText) { skipped += 1; continue; }
+            const drafted = await draftNudge(
+              {
+                friend: person.name,
+                organiser: name,
+                title: data.title,
+                merchant: data.merchant,
+                amountMinor: person.shareMinor ?? 0,
+                link: shareUrl(deps.env.PUBLIC_BASE_URL, deps.env.LINK_SECRET, organiser.id, split.id, person.id),
+                tone: 'friendly',
+                priorCount: person.nudge?.count ?? 0,
+                daysUnpaid: Math.floor((now - millis(data.lockedAt)!) / (24 * HOUR_MS)),
+                openedRecently: false,
+              },
+              deps.transport ?? (async () => { throw new Error('no model'); }),
+              deps.model ?? '',
+            );
+            // Here, unlike when the organiser asks, the model may decline to chase.
+            if (drafted.shouldSkip) {
+              skipped += 1;
+              await doc.ref.update({ 'nudge.skipReason': drafted.skipReason ?? 'Split chose not to chase this one.' });
+              continue;
+            }
+            await doc.ref.update({
+              'nudge.draftText': drafted.text,
+              'nudge.draftedAt': FieldValue.serverTimestamp(),
+            });
+            nudged += 1;
           }
-          await doc.ref.update({
-            'nudge.draftText': drafted.text,
-            'nudge.draftedAt': FieldValue.serverTimestamp(),
-          });
-          nudged += 1;
         }
       }
       res.json({ scanned, nudged, skipped });
