@@ -46,6 +46,11 @@ class _Api implements SplitsApi {
   @override
   Future<void> markPaidCash(String splitId, String participantId) async => cash.add(participantId);
 
+  final cancelled = <String>[];
+
+  @override
+  Future<void> cancel(String splitId) async => cancelled.add(splitId);
+
   @override
   Future<NudgeDraft> draftNudge(String splitId, String participantId, String tone) => throw UnimplementedError();
 
@@ -171,5 +176,22 @@ void main() {
     await tester.tap(find.text('Mark as paid'));
     await tester.pumpAndSettle();
     expect(_api.cash, ['dan']);
+  });
+
+  testWidgets('cancelling asks first, then cancels', (tester) async {
+    await _pump(tester);
+    await tester.scrollUntilVisible(find.byKey(const Key('cancel-split')), 200);
+    await tester.tap(find.byKey(const Key('cancel-split')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Keep it'));
+    await tester.pumpAndSettle();
+    expect(_api.cancelled, isEmpty);
+
+    await tester.tap(find.byKey(const Key('cancel-split')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel split'));
+    await tester.pumpAndSettle();
+    expect(_api.cancelled, hasLength(1));
+    await tester.pump(const Duration(seconds: 4));
   });
 }

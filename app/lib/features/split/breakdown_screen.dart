@@ -16,6 +16,7 @@ import '../../widgets/primary_button.dart';
 import '../../widgets/split_app_bar.dart';
 import '../../widgets/split_icon.dart';
 import '../../widgets/split_toast.dart';
+import 'cancel_split.dart';
 
 /// Who owes what (Breakdown.dc.html). One row per person, biggest share
 /// first, the organiser and anyone on us last. Each row opens to the lines
@@ -130,6 +131,12 @@ class _BreakdownScreenState extends ConsumerState<BreakdownScreen> {
                     TextButton(
                       onPressed: _busy ? null : () => _run(() => ref.read(splitsApiProvider).unlock(widget.splitId)),
                       child: const Text('Unlock to change something'),
+                    ),
+                  if (!locked && split != null)
+                    TextButton(
+                      key: const Key('cancel-split'),
+                      onPressed: _busy ? null : () => confirmCancelSplit(context, ref, widget.splitId, title: split.title),
+                      child: Text('Cancel this split', style: TextStyle(color: c.muted)),
                     ),
                 ],
               ),

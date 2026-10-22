@@ -17,6 +17,7 @@ import '../../widgets/settled_stamp.dart';
 import '../../widgets/split_app_bar.dart';
 import '../../widgets/split_icon.dart';
 import '../../widgets/split_toast.dart';
+import 'cancel_split.dart';
 import 'nudge_sheet.dart';
 import 'share_status_pill.dart';
 
@@ -150,6 +151,14 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
                   link: split?.links[p.id],
                 ),
               ),
+            if (split?.status == 'collecting') ...[
+              const SizedBox(height: 12),
+              TextButton(
+                key: const Key('cancel-split'),
+                onPressed: () => confirmCancelSplit(context, ref, widget.splitId, title: split!.title),
+                child: Text('Cancel this split', style: TextStyle(color: c.muted)),
+              ),
+            ],
           ],
         ),
       ),

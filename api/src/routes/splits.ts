@@ -8,7 +8,7 @@ import { looksLikeUpload, visionMime } from '../lib/image_type.js';
 import type { ChatTransport } from '../ai/client.js';
 import { extractReceipt, toDraftReceipt } from '../ai/extract_receipt.js';
 import { NOTHING_CAUGHT, parseRules, toRulesPreview } from '../ai/parse_rules.js';
-import { lockPlan, unlockedStatus } from '../domain/lock.js';
+import { lockPlan, paymentBlocker, supersedeOrder, unlockedStatus } from '../domain/lock.js';
 import { lineIdFor, receiptProblems } from '../domain/receipt.js';
 import { assertStatus, computeFor, createSplit, readSplit, toApi } from '../domain/splits.js';
 import type { Ambiguity } from '../ai/schemas.js';
@@ -295,20 +295,56 @@ export function splitsRouter(deps: SplitsDeps): Router {
     }
   });
 
-  // Spec §4 endpoint 14. Back to claiming, unless someone has started paying.
+  // Spec §4 endpoint 14. Back to claiming so the organiser can fix
+  // something. Refused once anyone has paid; a friend who only opened PayPal
+  // has that order superseded, and pays a fresh one after the next lock.
   router.post('/splits/:splitId/unlock', auth, async (req, res, next) => {
     try {
       const out = await deps.db.runTransaction(async (tx) => {
         const { ref, split, participants } = await readSplit(tx, deps.db, req.organiserId!, String(req.params.splitId));
         if (split.status === 'claiming') return { split, participants };
         assertStatus(split, ['collecting'], 'unlock the split');
-        if (participants.some((p) => p.paypalOrderId)) {
-          throw new ApiError(409, 'SPLIT_STATE_INVALID', 'Someone has started paying, so the split stays locked.');
-        }
+        const blocker = paymentBlocker(participants, 'unlock');
+        if (blocker) throw new ApiError(409, 'SPLIT_STATE_INVALID', blocker);
         tx.update(ref, { status: 'claiming', lockedAt: null, updatedAt: FieldValue.serverTimestamp() });
-        const next = participants.map((p) => ({ ...p, shareMinor: null, status: unlockedStatus(p) }));
-        for (const p of next) tx.update(ref.collection('participants').doc(p.id), { shareMinor: null, status: p.status });
+        const next = participants.map((p) => ({
+          ...p,
+          shareMinor: null,
+          status: unlockedStatus(p),
+          ...(p.paypalOrderId
+            ? { paypalOrderId: null, approvalUrl: null, supersededPaypalOrderIds: [...p.supersededPaypalOrderIds, p.paypalOrderId] }
+            : {}),
+        }));
+        for (const p of participants) {
+          tx.update(ref.collection('participants').doc(p.id), { shareMinor: null, status: unlockedStatus(p), nudge: { count: 0, lastSentAt: null, lastText: null, channel: null, snoozedUntil: null }, ...supersedeOrder(p) });
+        }
         return { split: { ...split, status: 'claiming' as const, lockedAt: null }, participants: next };
+      });
+      res.json(toApi(out));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Spec §4 endpoint 17. The bill is off. Friends' links show "This bill was
+  // cancelled" and every open PayPal order is superseded. A share already
+  // paid stays paid: the organiser settles that with the friend.
+  router.post('/splits/:splitId/cancel', auth, async (req, res, next) => {
+    try {
+      const out = await deps.db.runTransaction(async (tx) => {
+        const { ref, split, participants } = await readSplit(tx, deps.db, req.organiserId!, String(req.params.splitId));
+        if (split.status === 'cancelled') return { split, participants };
+        assertStatus(split, ['draft', 'claiming', 'collecting'], 'cancel the split');
+        const blocker = paymentBlocker(participants, 'cancel');
+        if (blocker) throw new ApiError(409, 'SPLIT_STATE_INVALID', blocker);
+        tx.update(ref, { status: 'cancelled', cancelledAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+        for (const p of participants) {
+          if (p.paypalOrderId) tx.update(ref.collection('participants').doc(p.id), supersedeOrder(p));
+        }
+        const next = participants.map((p) => (p.paypalOrderId
+          ? { ...p, paypalOrderId: null, approvalUrl: null, supersededPaypalOrderIds: [...p.supersededPaypalOrderIds, p.paypalOrderId] }
+          : p));
+        return { split: { ...split, status: 'cancelled' as const }, participants: next };
       });
       res.json(toApi(out));
     } catch (err) {

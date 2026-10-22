@@ -119,12 +119,71 @@ describe('POST /v1/splits/:id/unlock', () => {
     expect((await split.get()).data()).toMatchObject({ status: 'claiming', lockedAt: null });
   });
 
-  it('stays locked once someone has a PayPal order', async () => {
+  it('supersedes an open PayPal order, so the friend pays a fresh one', async () => {
     const { id, split } = await ready();
     await lock(id);
-    await split.collection('participants').doc('dan').update({ paypalOrderId: 'ORDER-1' });
+    await split.collection('participants').doc('dan').update({ paypalOrderId: 'ORDER-1', status: 'link_opened', approvalUrl: 'https://paypal/x' });
+    const res = await unlock(id);
+    expect(res.status).toBe(200);
+    const dan = (await split.collection('participants').doc('dan').get()).data()!;
+    expect(dan).toMatchObject({ status: 'claimed', shareMinor: null, paypalOrderId: null, approvalUrl: null, supersededPaypalOrderIds: ['ORDER-1'] });
+    expect((await split.get()).get('status')).toBe('claiming');
+  });
+
+  it('stays locked once someone has paid', async () => {
+    const { id, split } = await ready();
+    await lock(id);
+    await split.collection('participants').doc('dan').update({ paypalOrderId: 'ORDER-1', status: 'paid' });
     const res = await unlock(id);
     expect(res.status).toBe(409);
+    expect(res.body.error.message).toBe('Dan has already paid, so the shares stay as they are.');
     expect((await split.get()).get('status')).toBe('collecting');
+  });
+
+  it('waits while PayPal is confirming a payment', async () => {
+    const { id, split } = await ready();
+    await lock(id);
+    await split.collection('participants').doc('josh').update({ paypalOrderId: 'ORDER-2', status: 'processing' });
+    const res = await unlock(id);
+    expect(res.status).toBe(409);
+    expect(res.body.error.message).toMatch(/PayPal is still confirming Josh/);
+  });
+});
+
+const cancel = (id: string) => request(app()).post(`/v1/splits/${id}/cancel`).set('Authorization', 'Bearer kemi');
+
+describe('POST /v1/splits/:id/cancel', () => {
+  it('cancels a collecting split and supersedes open orders', async () => {
+    const { id, split } = await ready();
+    await lock(id);
+    await split.collection('participants').doc('dan').update({ paypalOrderId: 'ORDER-1', status: 'link_opened' });
+    await split.collection('participants').doc('josh').update({ status: 'paid' });
+    const res = await cancel(id);
+    expect(res.status).toBe(200);
+    expect(res.body.split.status).toBe('cancelled');
+    expect((await split.get()).get('status')).toBe('cancelled');
+    const dan = (await split.collection('participants').doc('dan').get()).data()!;
+    expect(dan).toMatchObject({ paypalOrderId: null, supersededPaypalOrderIds: ['ORDER-1'] });
+    expect((await split.collection('participants').doc('josh').get()).get('status')).toBe('paid');
+  });
+
+  it('cancels a split still being claimed, and is safe to repeat', async () => {
+    const { id, split } = await ready();
+    expect((await cancel(id)).status).toBe(200);
+    expect((await cancel(id)).status).toBe(200);
+    expect((await split.get()).get('status')).toBe('cancelled');
+  });
+
+  it('refuses a settled split', async () => {
+    const { id, split } = await ready();
+    await split.update({ status: 'settled' });
+    expect((await cancel(id)).status).toBe(409);
+  });
+
+  it('waits while PayPal is confirming a payment', async () => {
+    const { id, split } = await ready();
+    await lock(id);
+    await split.collection('participants').doc('dan').update({ status: 'pending', paypalOrderId: 'ORDER-1' });
+    expect((await cancel(id)).status).toBe(409);
   });
 });

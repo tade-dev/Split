@@ -60,6 +60,9 @@ class _Api implements SplitsApi {
   Future<void> unlock(String splitId) async => calls.add('unlock');
 
   @override
+  Future<void> cancel(String splitId) => throw UnimplementedError();
+
+  @override
   Future<void> markPaidCash(String splitId, String participantId) => throw UnimplementedError();
 
   @override
