@@ -35,8 +35,8 @@ No real money moves. Pay as this sandbox buyer:
 
 | | |
 |---|---|
-| Email | `TODO: sandbox buyer email` |
-| Password | `TODO: sandbox buyer password` |
+| Email | `jeho@gmail.com` |
+| Password | `12345678` |
 
 With no PayPal email set in Settings, payments go to Split's sandbox merchant. Set a sandbox **personal** account email there and the money lands in that account instead ([verified](docs/verified-facts.md)).
 
