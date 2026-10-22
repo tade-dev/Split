@@ -83,7 +83,15 @@ class HomeScreen extends ConsumerWidget {
                       if (waiting)
                         const SkeletonBox(width: 44, height: 44, radius: 22)
                       else if (name.isNotEmpty)
-                        Avatar(name: name, colourIndex: 0, size: 44),
+                        Semantics(
+                          button: true,
+                          label: 'Settings',
+                          child: GestureDetector(
+                            key: const Key('open-settings'),
+                            onTap: () => context.push('/settings'),
+                            child: Avatar(name: name, colourIndex: 0, size: 44),
+                          ),
+                        ),
                     ],
                   ),
                   const SizedBox(height: 16),

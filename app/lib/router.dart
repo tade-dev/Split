@@ -4,6 +4,7 @@ import 'core/motion/split_motion.dart';
 import 'features/home/home_screen.dart';
 import 'features/scan/reading_screen.dart';
 import 'features/scan/scan_screen.dart';
+import 'features/settings/settings_screen.dart';
 import 'features/split/claims_screen.dart';
 import 'features/split/people_screen.dart';
 import 'features/split/breakdown_screen.dart';
@@ -20,6 +21,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/',
       pageBuilder: (_, s) => splitPushPage(s, const HomeScreen()),
+    ),
+    GoRoute(
+      path: '/settings',
+      pageBuilder: (_, s) => splitPushPage(s, const SettingsScreen()),
     ),
     GoRoute(
       path: '/scan',
