@@ -63,6 +63,15 @@ class _Api implements SplitsApi {
   Future<void> markPaidCash(String splitId, String participantId) => throw UnimplementedError();
 
   @override
+  Future<NudgeDraft> draftNudge(String splitId, String participantId, String tone) => throw UnimplementedError();
+
+  @override
+  Future<void> nudgeSent(String splitId, String participantId, String text) => throw UnimplementedError();
+
+  @override
+  Future<void> snoozeNudge(String splitId, String participantId) => throw UnimplementedError();
+
+  @override
   Future<RulesPreview> rulesMessage(String splitId, String message) => throw UnimplementedError();
   @override
   Future<SplitDoc> patchRules(String splitId, Map<String, Object?> body) => throw UnimplementedError();

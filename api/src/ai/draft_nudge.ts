@@ -1,53 +1,24 @@
 import { nudgeDraftSchema } from './schemas.js';
 import { generateStructured, type ChatTransport } from './client.js';
 import { formatGbp } from '../domain/money.js';
-import type { NudgeOrder } from '../domain/nudge.js';
-
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
-
-/**
- * A date a buyer or seller can read. The design writes "Sat 10 Oct"; there is
- * no time on the order, so none is invented. An unparseable value is returned
- * unchanged rather than guessed.
- */
-export function formatUkDate(iso: string): string {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
-  if (!match) return iso;
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  if (
-    date.getUTCFullYear() !== year ||
-    date.getUTCMonth() !== month - 1 ||
-    date.getUTCDate() !== day
-  ) {
-    return iso;
-  }
-  return `${WEEKDAYS[date.getUTCDay()]} ${day} ${MONTHS[month - 1]}`;
-}
-
-/** Replaces any ISO date the model echoed. Leaves the payment link alone. */
-export function humaniseIsoDates(text: string): string {
-  return text.replace(/\b\d{4}-\d{2}-\d{2}\b/g, (iso) => formatUkDate(iso));
-}
 
 /** Nudge.dc.html's three chips. */
-export type NudgeTone = 'friendly' | 'gentle' | 'firm';
+export type NudgeTone = 'friendly' | 'cheeky' | 'firm';
 
+export const NUDGE_TONES: readonly NudgeTone[] = ['friendly', 'cheeky', 'firm'];
+
+// Spec §7.4: Sorted's nudge, re-prompted for a friend.
 export const NUDGE_SYSTEM = [
-  'You write a payment reminder a UK small seller sends a buyer in a DM, when a payment link has gone unpaid.',
-  'Write as the seller, in their voice. A sample of how they write is given below; match it.',
-  'UK English. Under 45 words. Polite and warm. Never guilt-trip, pressure, or threaten.',
+  'You write a friendly reminder to a friend about their share of a group bill, sent by the friend who paid the bill.',
+  'Write as the organiser, casually, the way friends text each other. UK English.',
+  'Under 40 words. Never guilt-trip, pressure, shame or threaten. It is a friend, not a debt.',
   'Say what it is for and the amount, exactly as given.',
-  'Include the payment link exactly once, exactly as given, with nothing appended to it. Do not invent, shorten or wrap any link.',
-  'Use no emoji unless the seller\'s own sample uses them. No HTML or markdown.',
-  'Do not promise a date, a time or anything else that is not in the order details given.',
-  'When the order details include a date, copy it exactly. Never rewrite it as an ISO date.',
-  'If this is not the first reminder, offer an easy out, for example that you are happy to hold it or cancel, just say.',
-  'Set recommendChannel to manual_copy: the seller pastes this into the chat themselves.',
-  'Set shouldSkip to true only if chasing would clearly be wrong from the details given; otherwise false, with skipReason null.',
+  'Include the link exactly once, exactly as given, with nothing appended to it. Do not invent, shorten or wrap any link.',
+  'No HTML or markdown. At most one emoji.',
+  'Do not mention anything that is not in the details given.',
+  'If this is not the first reminder, keep it lighter still and make it easy: whenever suits them.',
+  'Set recommendChannel to manual_copy: the organiser pastes this into the chat themselves.',
+  'Set shouldSkip to true only if chasing now would clearly be wrong from the details given (for example, they opened the link moments ago); otherwise false, with skipReason null.',
 ].join(' ');
 
 export const NUDGE_JSON_SCHEMA: Record<string, unknown> = {
@@ -63,20 +34,27 @@ export const NUDGE_JSON_SCHEMA: Record<string, unknown> = {
 };
 
 const TONE_GUIDANCE: Record<NudgeTone, string> = {
-  friendly: 'Tone: friendly and chatty, the way they would talk to a regular.',
-  gentle: 'Tone: gentle and low-key. Assume they have just been busy.',
-  firm: 'Tone: clear and direct, still polite. Ask them to pay or say if they no longer want it.',
+  friendly: 'Tone: warm and chatty.',
+  cheeky: 'Tone: playful and teasing, the way close friends wind each other up. Still kind.',
+  firm: 'Tone: clear and direct, still friendly. Ask them to sort it when they can.',
 };
 
 export type NudgeInput = {
-  order: NudgeOrder;
-  approvalUrl: string;
-  personaTone: string;
+  friend: string;
+  organiser: string;
+  /** The split's title, e.g. "Friday dinner". */
+  title: string;
+  merchant: string | null;
+  amountMinor: number;
+  /** The friend's own share link. */
+  link: string;
   tone: NudgeTone;
   /** How many nudges have already gone out. */
   priorCount: number;
-  /** Whole days since the link was sent. */
+  /** Whole days since the links went out. */
   daysUnpaid: number;
+  /** The friend opened their link within the last hour. */
+  openedRecently: boolean;
 };
 
 export type DraftedNudge = {
@@ -87,11 +65,6 @@ export type DraftedNudge = {
   skipReason: string | null;
 };
 
-function whatFor(order: NudgeOrder): string {
-  const items = order.lineItems.map((l) => l.nameResolved ?? l.nameRaw).join(', ');
-  return order.depositMinor !== null ? `the deposit for your ${items}` : `your ${items}`;
-}
-
 function amountForms(minor: number): string[] {
   const full = formatGbp(minor);
   return full.endsWith('.00') ? [full, full.slice(0, -3)] : [full];
@@ -99,48 +72,44 @@ function amountForms(minor: number): string[] {
 
 /**
  * Why a model draft cannot be pasted, or null if it can. A nudge with the
- * wrong link is worse than none: the buyer cannot pay, and the seller looks
- * careless at the exact moment they are asking for money.
+ * wrong link is worse than none: the friend cannot pay, and the organiser
+ * looks careless at the exact moment they are asking for money.
  */
-export function nudgeProblem(text: string, approvalUrl: string, amountMinor: number): string | null {
+export function nudgeProblem(text: string, link: string, amountMinor: number): string | null {
   if (!text.trim()) return 'empty';
   if (text.length > 500) return 'too long';
   if (/<[a-z/!][^>]*>/i.test(text)) return 'markup';
-  if (text.split(approvalUrl).length - 1 !== 1) return 'link not exactly once';
-  const others = text.split(approvalUrl).join(' ').match(/https?:\/\/\S+|www\.\S+/gi);
+  if (text.split(link).length - 1 !== 1) return 'link not exactly once';
+  const others = text.split(link).join(' ').match(/https?:\/\/\S+|www\.\S+/gi);
   if (others) return 'extra link';
   if (!amountForms(amountMinor).some((a) => text.includes(a))) return 'amount missing';
   return null;
 }
 
+const firstName = (name: string) => name.trim().split(/\s+/)[0] || 'there';
+
 /** Used whenever the model cannot write a nudge that passes. Same facts, plainer words. */
-export function fallbackNudge(input: Omit<NudgeInput, 'personaTone' | 'daysUnpaid'>): string {
-  const { order, approvalUrl, tone, priorCount } = input;
-  const who = order.buyerName?.trim().split(/\s+/)[0] || 'there';
-  const amount = formatGbp(order.amountDueMinor);
-  const when = order.fulfilment.date
-    ? ` for ${order.fulfilment.mode === 'delivery' ? 'delivery' : 'collection'} ${formatUkDate(order.fulfilment.date)}`
-    : '';
-  const out = priorCount > 0 ? " No rush, and if you've changed your mind just say and I'll cancel it." : '';
+export function fallbackNudge(input: Pick<NudgeInput, 'friend' | 'title' | 'merchant' | 'amountMinor' | 'link' | 'tone' | 'priorCount'>): string {
+  const { link, tone, priorCount } = input;
+  const who = firstName(input.friend);
+  const what = input.merchant ? `${input.title} at ${input.merchant}` : input.title;
+  const amount = formatGbp(input.amountMinor);
+  const easy = priorCount > 0 ? ' No rush, whenever suits.' : '';
   const opener = tone === 'firm'
-    ? `Hi ${who}, a reminder that ${whatFor(order)}${when} is still unpaid.`
-    : tone === 'gentle'
-      ? `Hi ${who}, no worries if you've been busy! Just checking the link came through for ${whatFor(order)}${when}.`
-      : `Hi ${who}! Just checking the payment link came through for ${whatFor(order)}${when}.`;
-  return `${opener} It's ${amount}, and you can pay here: ${approvalUrl}${out}`;
+    ? `Hi ${who}, your ${amount} for ${what} is still outstanding.`
+    : tone === 'cheeky'
+      ? `Oi ${who}! ${what} isn't going to pay for itself 😄 Your bit's ${amount}.`
+      : `Hey ${who}! Your bit for ${what} is ${amount}.`;
+  return `${opener} Here's your link: ${link}${easy}`;
 }
 
 /**
  * Drafts a nudge. Never throws: a model failure, or a draft that fails the
- * checks above, falls back to the template, so the seller always has
+ * checks above, falls back to the template, so the organiser always has
  * something correct to paste.
  */
-export async function draftNudge(
-  input: NudgeInput,
-  transport: ChatTransport,
-  model: string,
-): Promise<DraftedNudge> {
-  const { order, approvalUrl, tone } = input;
+export async function draftNudge(input: NudgeInput, transport: ChatTransport, model: string): Promise<DraftedNudge> {
+  const { link, tone, amountMinor } = input;
   const fallback = (): DraftedNudge => ({
     text: fallbackNudge(input),
     source: 'template',
@@ -149,25 +118,17 @@ export async function draftNudge(
   });
 
   const details = [
-    `Buyer: ${order.buyerName ?? 'the buyer'}`,
-    `It is for: ${order.lineItems.map((l) => `${l.qty} x ${l.nameResolved ?? l.nameRaw}`).join(', ')}`,
-    order.depositMinor !== null
-      ? `Amount: a ${formatGbp(order.amountDueMinor)} deposit, with the rest due on ${order.fulfilment.mode === 'delivery' ? 'delivery' : 'collection'}`
-      : `Amount: ${formatGbp(order.amountDueMinor)}`,
-    order.fulfilment.date
-      ? `${order.fulfilment.mode === 'delivery' ? 'Delivery' : 'Collection'}: ${formatUkDate(order.fulfilment.date)}`
-      : '',
+    `Friend: ${input.friend}`,
+    `From: ${input.organiser}, who paid the bill`,
+    `It is for: ${input.title}${input.merchant ? ` at ${input.merchant}` : ''}`,
+    `Their share: ${formatGbp(amountMinor)}`,
     `Unpaid for: ${input.daysUnpaid} day${input.daysUnpaid === 1 ? '' : 's'}`,
     `Reminders already sent: ${input.priorCount}`,
-    `Payment link, to include verbatim: ${approvalUrl}`,
+    input.openedRecently ? 'They opened their link within the last hour.' : '',
+    `Their link, to include verbatim: ${link}`,
   ].filter(Boolean).join('\n');
 
-  const system = [
-    NUDGE_SYSTEM,
-    `\n\n${TONE_GUIDANCE[tone]}`,
-    input.personaTone.trim() ? `\n\nHow the seller writes: "${input.personaTone.trim()}"` : '',
-    `\n\nOrder details:\n${details}`,
-  ].join('');
+  const system = `${NUDGE_SYSTEM}\n\n${TONE_GUIDANCE[tone]}\n\nDetails:\n${details}`;
 
   try {
     const drafted = await generateStructured(
@@ -181,8 +142,8 @@ export async function draftNudge(
       transport,
       model,
     );
-    const text = humaniseIsoDates(drafted.text.trim());
-    if (nudgeProblem(text, approvalUrl, order.amountDueMinor) !== null) {
+    const text = drafted.text.trim();
+    if (nudgeProblem(text, link, amountMinor) !== null) {
       return { ...fallback(), shouldSkip: drafted.shouldSkip, skipReason: drafted.skipReason };
     }
     return { text, source: 'ai', shouldSkip: drafted.shouldSkip, skipReason: drafted.skipReason };

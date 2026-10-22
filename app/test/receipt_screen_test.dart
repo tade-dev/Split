@@ -75,6 +75,15 @@ class _RecordingApi implements SplitsApi {
 
   @override
   Future<void> markPaidCash(String splitId, String participantId) => throw UnimplementedError();
+
+  @override
+  Future<NudgeDraft> draftNudge(String splitId, String participantId, String tone) => throw UnimplementedError();
+
+  @override
+  Future<void> nudgeSent(String splitId, String participantId, String text) => throw UnimplementedError();
+
+  @override
+  Future<void> snoozeNudge(String splitId, String participantId) => throw UnimplementedError();
 }
 
 late StreamController<SplitDoc?> _stream;

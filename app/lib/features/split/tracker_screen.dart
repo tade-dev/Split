@@ -17,6 +17,7 @@ import '../../widgets/settled_stamp.dart';
 import '../../widgets/split_app_bar.dart';
 import '../../widgets/split_icon.dart';
 import '../../widgets/split_toast.dart';
+import 'nudge_sheet.dart';
 import 'share_status_pill.dart';
 
 bool _paid(Participant p) => p.status == 'paid' || p.status == 'paid_cash';
@@ -141,6 +142,13 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
                 onCopy: _copy,
                 onPreview: _preview,
                 onMarkCash: _markCash,
+                onNudge: (p) => showNudgeSheet(
+                  context,
+                  splitId: widget.splitId,
+                  title: split?.title ?? 'the bill',
+                  person: p,
+                  link: split?.links[p.id],
+                ),
               ),
           ],
         ),
@@ -150,13 +158,14 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
 }
 
 class _PersonRow extends StatelessWidget {
-  const _PersonRow({required this.person, required this.link, required this.onCopy, required this.onPreview, required this.onMarkCash});
+  const _PersonRow({required this.person, required this.link, required this.onCopy, required this.onPreview, required this.onMarkCash, required this.onNudge});
 
   final Participant person;
   final String? link;
   final Future<void> Function(Participant p, String url) onCopy;
   final Future<void> Function(String url) onPreview;
   final Future<void> Function(Participant p) onMarkCash;
+  final Future<void> Function(Participant p) onNudge;
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +207,23 @@ class _PersonRow extends StatelessWidget {
                 ],
               ),
             ),
-            Text(formatGbp(p.shareMinor ?? 0), style: text.titleMedium),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(formatGbp(p.shareMinor ?? 0), style: text.titleMedium),
+                if (_cashable(p))
+                  TextButton(
+                    key: Key('nudge-${p.id}'),
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(0, 32),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    onPressed: () => onNudge(p),
+                    child: const Text('Nudge'),
+                  ),
+              ],
+            ),
             if (!p.isOrganiser && (link != null || _cashable(p)))
               PopupMenuButton<String>(
                 key: Key('menu-${p.id}'),

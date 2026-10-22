@@ -47,6 +47,15 @@ class _Api implements SplitsApi {
   Future<void> markPaidCash(String splitId, String participantId) async => cash.add(participantId);
 
   @override
+  Future<NudgeDraft> draftNudge(String splitId, String participantId, String tone) => throw UnimplementedError();
+
+  @override
+  Future<void> nudgeSent(String splitId, String participantId, String text) => throw UnimplementedError();
+
+  @override
+  Future<void> snoozeNudge(String splitId, String participantId) => throw UnimplementedError();
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 

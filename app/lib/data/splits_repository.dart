@@ -20,6 +20,9 @@ typedef ClaimResult = ({
 
 /// What POST /v1/splits/:id/rules/message proposes. Nothing is written until
 /// the organiser says yes and the rules go through [SplitsApi.patchRules].
+/// A drafted reminder (endpoint 16). `text` already holds the friend's link.
+typedef NudgeDraft = ({String text, String tone, bool shouldSkip, String? skipReason});
+
 typedef RulesPreview = ({Rules? rules, String? confirmationText, int? figureMinor, String? message});
 
 /// Every write to a split. Named so tests can fake it without Dio or a token.
@@ -64,6 +67,15 @@ abstract class SplitsApi {
 
   /// Endpoint 15: the friend paid in cash or by bank transfer.
   Future<void> markPaidCash(String splitId, String participantId);
+
+  /// Endpoint 16: drafts a reminder in a tone ('friendly', 'cheeky', 'firm').
+  Future<NudgeDraft> draftNudge(String splitId, String participantId, String tone);
+
+  /// The organiser copied the nudge into their chat. Split never sends it.
+  Future<void> nudgeSent(String splitId, String participantId, String text);
+
+  /// "Remind me tomorrow".
+  Future<void> snoozeNudge(String splitId, String participantId);
 }
 
 class HttpSplitsApi implements SplitsApi {
@@ -159,6 +171,25 @@ class HttpSplitsApi implements SplitsApi {
   @override
   Future<void> markPaidCash(String splitId, String participantId) =>
       _client.postJson('/v1/splits/$splitId/participants/$participantId/paid-cash', const <String, Object?>{});
+
+  @override
+  Future<NudgeDraft> draftNudge(String splitId, String participantId, String tone) async {
+    final body = await _client.postJson('/v1/splits/$splitId/participants/$participantId/nudge', {'tone': tone});
+    return (
+      text: body['text'] as String,
+      tone: body['tone'] as String? ?? tone,
+      shouldSkip: body['shouldSkip'] as bool? ?? false,
+      skipReason: body['skipReason'] as String?,
+    );
+  }
+
+  @override
+  Future<void> nudgeSent(String splitId, String participantId, String text) =>
+      _client.postJson('/v1/splits/$splitId/participants/$participantId/nudge/sent', {'text': text});
+
+  @override
+  Future<void> snoozeNudge(String splitId, String participantId) =>
+      _client.postJson('/v1/splits/$splitId/participants/$participantId/nudge/snooze', const <String, Object?>{});
 }
 
 /// Reads go straight to Firestore so the screens update live; writes go
