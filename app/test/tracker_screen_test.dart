@@ -8,6 +8,7 @@ import 'package:split/core/motion/paid_announcer.dart';
 import 'package:split/core/motion/paid_pop.dart';
 import 'package:split/core/theme/split_theme.dart';
 import 'package:split/features/split/tracker_screen.dart';
+import 'package:split/data/splits_repository.dart';
 import 'package:split/models/participant.dart';
 import 'package:split/models/split.dart';
 import 'package:split/providers/splits_providers.dart';
@@ -37,6 +38,17 @@ late StreamController<List<Participant>> _participants;
 late List<String> _announced;
 late int _buzzes;
 late List<Uri> _opened;
+late _Api _api;
+
+class _Api implements SplitsApi {
+  final cash = <String>[];
+
+  @override
+  Future<void> markPaidCash(String splitId, String participantId) async => cash.add(participantId);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
 
 Future<void> _pump(WidgetTester tester) async {
   _splits = StreamController<SplitDoc?>.broadcast();
@@ -44,12 +56,14 @@ Future<void> _pump(WidgetTester tester) async {
   _announced = [];
   _buzzes = 0;
   _opened = [];
+  _api = _Api();
   await tester.binding.setSurfaceSize(const Size(700, 1200));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(ProviderScope(
     overrides: [
       splitProvider('s1').overrideWith((ref) => _splits.stream),
       participantsProvider('s1').overrideWith((ref) => _participants.stream),
+      splitsApiProvider.overrideWithValue(_api),
     ],
     child: MaterialApp(
       theme: splitTheme(),
@@ -115,7 +129,7 @@ void main() {
 
   testWidgets("a row's menu previews the friend's page", (tester) async {
     await _pump(tester);
-    expect(find.byKey(const Key('menu-josh')), findsNothing, reason: 'no cached link for Josh');
+    expect(find.byKey(const Key('menu-josh')), findsNothing, reason: 'Josh has paid and has no cached link');
     await tester.tap(find.byKey(const Key('menu-dan')));
     await tester.pumpAndSettle();
     expect(find.text('Copy link'), findsOneWidget);
@@ -128,5 +142,25 @@ void main() {
     expect(clockTime(DateTime(2026, 10, 30, 21, 4)), '9:04pm');
     expect(clockTime(DateTime(2026, 10, 30, 0, 30)), '12:30am');
     expect(clockTime(DateTime(2026, 10, 30, 12, 0)), '12:00pm');
+  });
+
+  testWidgets('a share paid another way can be marked paid in cash, after a confirm', (tester) async {
+    await _pump(tester);
+    await tester.tap(find.byKey(const Key('menu-dan')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mark as paid in cash'));
+    await tester.pumpAndSettle();
+    expect(find.text('Mark Dan as paid?'), findsOneWidget);
+    await tester.tap(find.text('Not yet'));
+    await tester.pumpAndSettle();
+    expect(_api.cash, isEmpty);
+
+    await tester.tap(find.byKey(const Key('menu-dan')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mark as paid in cash'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mark as paid'));
+    await tester.pumpAndSettle();
+    expect(_api.cash, ['dan']);
   });
 }

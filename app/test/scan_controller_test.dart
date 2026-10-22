@@ -51,6 +51,9 @@ class _FakeApi implements SplitsApi {
 
   @override
   Future<void> unlock(String splitId) => throw UnimplementedError();
+
+  @override
+  Future<void> markPaidCash(String splitId, String participantId) => throw UnimplementedError();
 }
 
 ProviderContainer _container(SplitsApi api) {
