@@ -55,3 +55,31 @@ export async function settleIfDone(
   tx.update(splitRef, { status: 'settled', settledAt: FieldValue.serverTimestamp() });
   return true;
 }
+
+/**
+ * Who stops the organiser unlocking or cancelling: anyone whose money has
+ * moved, or is moving at PayPal right now. Null when nobody does. A friend
+ * who only has an open order does not block; their order is superseded.
+ */
+export function paymentBlocker(participants: ParticipantDoc[], action: 'unlock' | 'cancel'): string | null {
+  const moving = participants.find((p) => p.status === 'processing' || p.status === 'pending');
+  if (moving) return `PayPal is still confirming ${moving.name}'s payment. Try again in a minute.`;
+  if (action === 'cancel') return null;
+  const paid = participants.find((p) => !p.isOrganiser && (p.status === 'paid' || p.status === 'paid_cash'));
+  return paid ? `${paid.name} has already paid, so the shares stay as they are.` : null;
+}
+
+/**
+ * The write that retires a share's open PayPal order (spec §5 failure
+ * states): the old id goes on `supersededPaypalOrderIds`, so the return page
+ * never captures it and a capture that lands anyway is flagged for refund.
+ */
+export function supersedeOrder(p: ParticipantDoc): Record<string, unknown> {
+  if (!p.paypalOrderId) return {};
+  return {
+    paypalOrderId: null,
+    approvalUrl: null,
+    paypalOrderCreatedAt: null,
+    supersededPaypalOrderIds: FieldValue.arrayUnion(p.paypalOrderId),
+  };
+}
