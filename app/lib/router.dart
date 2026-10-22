@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/first_run.dart';
 import 'core/motion/split_motion.dart';
 import 'features/home/home_screen.dart';
 import 'features/scan/reading_screen.dart';
@@ -12,6 +13,7 @@ import 'features/split/people_screen.dart';
 import 'features/split/breakdown_screen.dart';
 import 'features/split/rules_screen.dart';
 import 'features/split/tracker_screen.dart';
+import 'features/welcome/welcome_screen.dart';
 import 'features/split/receipt_screen.dart';
 
 /// Push for further along the task, sheet for something that sits over it
@@ -19,7 +21,14 @@ import 'features/split/receipt_screen.dart';
 /// "Split a new bill", so there is no tab shell.
 final appRouter = GoRouter(
   initialLocation: '/',
+  // First run lands on Welcome, but only from Home: a friend's or judge's
+  // deep link to a bill still opens that bill.
+  redirect: (_, s) => FirstRun.showWelcome && s.matchedLocation == '/' ? '/welcome' : null,
   routes: [
+    GoRoute(
+      path: '/welcome',
+      pageBuilder: (_, s) => splitPushPage(s, const WelcomeScreen()),
+    ),
     GoRoute(
       path: '/',
       pageBuilder: (_, s) => splitPushPage(s, const HomeScreen()),
