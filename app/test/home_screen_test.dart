@@ -165,6 +165,14 @@ void main() {
     expect(find.text('Friday dinner, Little Bao House'), findsNothing);
     expect(find.text('Split a new bill'), findsOneWidget);
     expect(find.text('Try a sample bill'), findsOneWidget);
+    expect(find.byKey(const Key('home-empty')), findsOneWidget);
+    expect(find.text('Split your first bill'), findsOneWidget);
+  });
+
+  testWidgets('a bill in progress with nothing settled says where paid bills go', (tester) async {
+    await _pump(tester, [_bao]);
+    expect(find.byKey(const Key('home-empty-settled')), findsOneWidget);
+    expect(find.byKey(const Key('home-empty')), findsNothing);
   });
 
   testWidgets('the sample bill really is bundled', (tester) async {
