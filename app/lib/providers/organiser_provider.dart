@@ -41,3 +41,9 @@ final organiserProvider = StreamProvider<Organiser?>((ref) {
         (snap) => snap.exists ? Organiser.fromJson({...snap.data()!, 'id': snap.id}) : null,
       );
 });
+
+/// Saves the organiser's name and PayPal email (endpoint 3). The new values
+/// come back through [organiserProvider]; nothing is cached here.
+final saveOrganiserProvider = Provider<Future<void> Function(Map<String, Object?> changes)>((ref) {
+  return (changes) => ref.read(apiClientProvider).patchJson('/v1/session/organiser', changes);
+});
