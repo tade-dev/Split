@@ -13,6 +13,7 @@ import '../../providers/organiser_provider.dart';
 import '../../providers/splits_providers.dart';
 import '../../widgets/avatar.dart';
 import '../../widgets/primary_button.dart';
+import '../../widgets/skeleton.dart';
 import '../../widgets/split_icon.dart';
 import '../../widgets/split_toast.dart';
 import 'summary_card.dart';
@@ -52,7 +53,11 @@ class HomeScreen extends ConsumerWidget {
     final c = SplitColors.of(context);
     final text = Theme.of(context).textTheme;
     final name = ref.watch(organiserProvider).value?.displayName ?? '';
-    final splits = ref.watch(splitsProvider).value ?? const <SplitDoc>[];
+    // On a first visit the name and the sample bill arrive with bootstrap.
+    // Until then the greeting and the card are placeholders, not a bare "Hi".
+    final waiting = name.isEmpty && !ref.watch(bootstrapProvider).hasValue;
+    final splitsAsync = ref.watch(splitsProvider);
+    final splits = splitsAsync.value ?? const <SplitDoc>[];
     final active = splits.where((s) => s.isOpen).firstOrNull;
     final settled = splits.where((s) => s.status == 'settled').toList();
 
@@ -67,13 +72,25 @@ class HomeScreen extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      Expanded(child: Text(name.isEmpty ? 'Hi' : 'Hi $name', style: text.headlineLarge)),
-                      if (name.isNotEmpty) Avatar(name: name, colourIndex: 0, size: 44),
+                      Expanded(
+                        child: waiting
+                            ? const Align(
+                                alignment: Alignment.centerLeft,
+                                child: SkeletonLine(key: Key('greeting-skeleton'), width: 140, fontSize: 30),
+                              )
+                            : Text(name.isEmpty ? 'Hi' : 'Hi $name', style: text.headlineLarge),
+                      ),
+                      if (waiting)
+                        const SkeletonBox(width: 44, height: 44, radius: 22)
+                      else if (name.isNotEmpty)
+                        Avatar(name: name, colourIndex: 0, size: 44),
                     ],
                   ),
                   const SizedBox(height: 16),
                   if (active != null)
                     SummaryCard(split: active)
+                  else if (waiting || !splitsAsync.hasValue)
+                    const _SummarySkeleton()
                   else
                     Text(
                       'Snap a bill and Split works out what everyone owes, to the penny.',
@@ -155,6 +172,31 @@ class _SettledRow extends ConsumerWidget {
             decoration: BoxDecoration(color: c.successTint, borderRadius: BorderRadius.circular(999)),
             child: Text('Settled', style: text.labelMedium?.copyWith(color: c.success, fontWeight: FontWeight.w600)),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The dark card's shape while the first bill is on its way.
+class _SummarySkeleton extends StatelessWidget {
+  const _SummarySkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = SplitColors.of(context);
+    return Container(
+      key: const Key('summary-skeleton'),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: c.ink, borderRadius: BorderRadius.circular(SplitShape.cardRadiusLarge)),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SkeletonLine(width: 160, dark: true),
+          SizedBox(height: 16),
+          SkeletonLine(width: 120, fontSize: 36, dark: true),
+          SizedBox(height: 16),
+          SkeletonLine(width: 200, dark: true),
         ],
       ),
     );

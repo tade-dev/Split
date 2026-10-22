@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -80,6 +82,7 @@ Future<void> _pump(WidgetTester tester, List<SplitDoc> splits) async {
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(ProviderScope(
     overrides: [
+      bootstrapProvider.overrideWith((ref) async {}),
       organiserProvider.overrideWith((ref) => Stream.value(const Organiser(id: 'kemi', displayName: 'Kemi'))),
       splitsProvider.overrideWith((ref) => Stream.value(splits)),
       participantsProvider.overrideWith((ref, splitId) => Stream.value(switch (splitId) {
@@ -160,5 +163,45 @@ void main() {
     await tester.tap(find.text('£79.03 of £118.26 back'));
     await tester.pumpAndSettle();
     expect(find.text('tracker dinner'), findsOneWidget);
+  });
+
+  testWidgets('a first visit shows placeholders, not a bare Hi, until the organiser arrives', (tester) async {
+    final organiser = StreamController<Organiser?>();
+    final bootstrap = Completer<void>();
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        bootstrapProvider.overrideWith((ref) => bootstrap.future),
+        organiserProvider.overrideWith((ref) => organiser.stream),
+        splitsProvider.overrideWith((ref) => const Stream<List<SplitDoc>>.empty()),
+      ],
+      child: MaterialApp(theme: splitTheme(), home: const HomeScreen()),
+    ));
+    await tester.pump();
+    expect(find.byKey(const Key('greeting-skeleton')), findsOneWidget);
+    expect(find.byKey(const Key('summary-skeleton')), findsOneWidget);
+    expect(find.text('Hi'), findsNothing);
+
+    organiser.add(const Organiser(id: 'kemi', displayName: 'Kemi'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Hi Kemi'), findsOneWidget);
+    expect(find.byKey(const Key('greeting-skeleton')), findsNothing);
+    bootstrap.complete();
+    await organiser.close();
+  });
+
+  testWidgets('if bootstrap finishes with no name, it still says Hi', (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        bootstrapProvider.overrideWith((ref) async {}),
+        organiserProvider.overrideWith((ref) => Stream.value(null)),
+        splitsProvider.overrideWith((ref) => Stream.value(const <SplitDoc>[])),
+      ],
+      child: MaterialApp(theme: splitTheme(), home: const HomeScreen()),
+    ));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Hi'), findsOneWidget);
+    expect(find.byKey(const Key('summary-skeleton')), findsNothing);
   });
 }

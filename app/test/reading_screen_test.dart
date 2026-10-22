@@ -10,6 +10,7 @@ import 'package:split/core/theme/split_theme.dart';
 import 'package:split/data/splits_repository.dart';
 import 'package:split/features/scan/reading_screen.dart';
 import 'package:split/models/split.dart';
+import 'package:split/providers/organiser_provider.dart';
 import 'package:split/providers/splits_providers.dart';
 
 /// The split the API returned for the Little Bao House photo.
@@ -85,6 +86,7 @@ Widget _app(ScanState initial, {bool reduce = false}) {
   ]);
   return ProviderScope(
     overrides: [
+      bootstrapProvider.overrideWith((ref) async {}),
       scanControllerProvider.overrideWith(() => _controller),
       splitsApiProvider.overrideWithValue(_api),
     ],

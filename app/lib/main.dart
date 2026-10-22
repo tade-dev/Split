@@ -20,7 +20,7 @@ class SplitApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Read at the root so signing in and seeding the demo split happen on
     // launch, not the first time a screen needs the organiser.
-    ref.watch(organiserIdProvider);
+    ref.watch(bootstrapProvider);
 
     return MaterialApp.router(
       title: 'Split',

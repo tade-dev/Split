@@ -5,17 +5,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/organiser.dart';
 import 'api_provider.dart';
 
-/// Signs the organiser in anonymously and makes sure their doc exists.
+/// Signs the organiser in anonymously.
 ///
 /// The anonymous sign-in means a judge opens the hosted build and is already
-/// an organiser, scoped to their own uid. Bootstrap is idempotent, so running
-/// it on every launch is safe. With `demo: true` a new organiser is "Kemi"
-/// with the Little Bao House bill waiting in draft (plan decision D11).
+/// an organiser, scoped to their own uid. It returns as soon as there is a
+/// uid, so a returning organiser's name and bills stream straight from
+/// Firestore without waiting on the API, which can take many seconds to
+/// answer on a first visit.
 final organiserIdProvider = FutureProvider<String>((ref) async {
   final auth = FirebaseAuth.instance;
-  final uid = auth.currentUser?.uid ??
-      (await auth.signInAnonymously()).user!.uid;
+  return auth.currentUser?.uid ?? (await auth.signInAnonymously()).user!.uid;
+});
 
+/// Makes sure the organiser's doc exists. Idempotent, so it runs on every
+/// launch. With `demo: true` a new organiser is "Kemi" with the Little Bao
+/// House bill waiting in draft (plan decision D11). Anything that needs the
+/// doc to exist first, like reading a receipt, waits on this.
+final bootstrapProvider = FutureProvider<void>((ref) async {
+  await ref.watch(organiserIdProvider.future);
   try {
     await ref.read(apiClientProvider).postJson('/v1/session/bootstrap', {
       'demo': true,
@@ -24,8 +31,6 @@ final organiserIdProvider = FutureProvider<String>((ref) async {
     // An organiser with existing splits must still get in when the API is
     // unreachable: their splits come from Firestore directly, not from here.
   }
-
-  return uid;
 });
 
 /// The live organiser doc. Null until bootstrap has written it.
