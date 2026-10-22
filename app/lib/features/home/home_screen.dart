@@ -12,6 +12,7 @@ import '../../models/split.dart';
 import '../../providers/organiser_provider.dart';
 import '../../providers/splits_providers.dart';
 import '../../widgets/avatar.dart';
+import '../../widgets/bill_illustration.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/split_icon.dart';
@@ -109,10 +110,8 @@ class HomeScreen extends ConsumerWidget {
                   else if (waiting || !splitsAsync.hasValue)
                     const _SummarySkeleton()
                   else
-                    Text(
-                      'Snap a bill and Split works out what everyone owes, to the penny.',
-                      style: text.bodyLarge?.copyWith(color: c.muted),
-                    ),
+                    const _EmptyHome(first: true),
+                  if (active != null && settled.isEmpty) const _EmptyHome(first: false),
                   if (settled.isNotEmpty) ...[
                     const SizedBox(height: 24),
                     Text('Settled', style: text.titleLarge),
@@ -142,6 +141,45 @@ class HomeScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The space under the summary while there is nothing settled yet: the
+/// illustration and a line on what happens next. The actions stay pinned
+/// below it, so they sit right under the picture.
+class _EmptyHome extends StatelessWidget {
+  const _EmptyHome({required this.first});
+
+  /// No bill at all yet, rather than one still in progress.
+  final bool first;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = SplitColors.of(context);
+    final text = Theme.of(context).textTheme;
+    return Padding(
+      key: Key(first ? 'home-empty' : 'home-empty-settled'),
+      padding: EdgeInsets.only(top: first ? 72 : 40),
+      child: Column(
+        children: [
+          const BillIllustration(),
+          const SizedBox(height: 20),
+          Text(
+            first ? 'Split your first bill' : 'Paid-up bills land here',
+            style: text.titleLarge,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            first
+                ? 'Snap the receipt. Friends say what they had, and everyone pays you back by PayPal, to the penny.'
+                : 'Once everyone has paid you back, the bill moves down here.',
+            style: text.bodyMedium?.copyWith(color: c.muted),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
