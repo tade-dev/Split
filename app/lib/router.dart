@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/motion/split_motion.dart';
@@ -6,6 +7,7 @@ import 'features/scan/reading_screen.dart';
 import 'features/scan/scan_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/split/claims_screen.dart';
+import 'features/split/split_gate.dart';
 import 'features/split/people_screen.dart';
 import 'features/split/breakdown_screen.dart';
 import 'features/split/rules_screen.dart';
@@ -38,28 +40,34 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/split/:id/receipt',
-      pageBuilder: (_, s) => splitPushPage(s, ReceiptScreen(splitId: s.pathParameters['id']!)),
+      pageBuilder: (_, s) => splitPushPage(s, _gated(s, (id) => ReceiptScreen(splitId: id))),
     ),
     GoRoute(
       path: '/split/:id/people',
-      pageBuilder: (_, s) => splitPushPage(s, PeopleScreen(splitId: s.pathParameters['id']!)),
+      pageBuilder: (_, s) => splitPushPage(s, _gated(s, (id) => PeopleScreen(splitId: id))),
     ),
     GoRoute(
       path: '/split/:id/claims',
-      pageBuilder: (_, s) => splitPushPage(s, ClaimsScreen(splitId: s.pathParameters['id']!)),
+      pageBuilder: (_, s) => splitPushPage(s, _gated(s, (id) => ClaimsScreen(splitId: id))),
     ),
     GoRoute(
       path: '/split/:id/rules',
-      pageBuilder: (_, s) => splitPushPage(s, RulesScreen(splitId: s.pathParameters['id']!)),
+      pageBuilder: (_, s) => splitPushPage(s, _gated(s, (id) => RulesScreen(splitId: id))),
     ),
     GoRoute(
       path: '/split/:id/breakdown',
-      pageBuilder: (_, s) => splitPushPage(s, BreakdownScreen(splitId: s.pathParameters['id']!)),
+      pageBuilder: (_, s) => splitPushPage(s, _gated(s, (id) => BreakdownScreen(splitId: id))),
     ),
     // Last, so /split/reading above wins over the id.
     GoRoute(
       path: '/split/:id',
-      pageBuilder: (_, s) => splitPushPage(s, TrackerScreen(splitId: s.pathParameters['id']!)),
+      pageBuilder: (_, s) => splitPushPage(s, _gated(s, (id) => TrackerScreen(splitId: id))),
     ),
   ],
 );
+
+/// Every screen of one bill goes through [SplitGate].
+Widget _gated(GoRouterState s, Widget Function(String id) screen) {
+  final id = s.pathParameters['id']!;
+  return SplitGate(splitId: id, child: screen(id));
+}
