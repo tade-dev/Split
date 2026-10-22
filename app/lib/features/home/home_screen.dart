@@ -97,6 +97,15 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   if (active != null)
                     SummaryCard(split: active)
+                  else if (splitsAsync.hasError && !splitsAsync.hasValue)
+                    Column(
+                      key: const Key('splits-error'),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Couldn't load your bills. Check your connection.", style: text.bodyLarge?.copyWith(color: c.muted)),
+                        TextButton(onPressed: () => ref.invalidate(splitsProvider), child: const Text('Try again')),
+                      ],
+                    )
                   else if (waiting || !splitsAsync.hasValue)
                     const _SummarySkeleton()
                   else
