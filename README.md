@@ -59,6 +59,19 @@ The model reads; code counts.
 - **Reconcile.** A scheduled job re-checks open orders with PayPal, so a missed return and webhook are picked up within about 10 minutes.
 - **Unlock, cancel and expiry.** Unlocking a split or cancelling it retires any open PayPal order. Unpaid orders are replaced after `ORDER_EXPIRY_HOURS` (default 168, seven days). A capture that lands on a retired order is marked as needing a refund.
 
+## Built with
+
+| Tool | What it does in Split |
+|---|---|
+| **PayPal** (Orders v2, webhooks, sandbox) | Each friend pays their share by PayPal checkout, straight to the organiser as payee. Covers capture on return, verified webhooks and the reconcile job |
+| **OpenAI** (`gpt-5.5`) | Reads receipts from photos, turns plain-words claims and rules into structured changes, and drafts nudges. All calls use a strict JSON schema with one corrective retry |
+| **Render** (sponsor) | Hosts the API and the friend pages as a web service on the `starter` plan, deployed from `api/render.yaml` as a Blueprint |
+| **Flutter** | The organiser's app, from one codebase for web, iOS and Android. Uses Riverpod, go_router, flutter_animate and freezed |
+| **Firebase** | Anonymous Auth (a judge is signed in on first visit), Firestore (live streams drive the tracker's Paid flip), and Hosting for the web build |
+| **Node.js, TypeScript, Express** | The API, with zod validating every request and model response |
+| **Vitest, Supertest, Firebase emulators** | API tests run offline against the Firestore and Auth emulators |
+| **GitHub Actions** | A backup scheduler for the reconcile, expiry and nudge sweeps (`.github/workflows/sweeps.yml`), alongside an external cron |
+
 ## Architecture
 
 ```mermaid
@@ -161,4 +174,4 @@ flutter test
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE).
+MIT, an OSI-approved licence. See [LICENSE](LICENSE).
