@@ -66,5 +66,13 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Split uses the camera to photograph your bill so it can read the items and prices.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Split opens your photos so you can pick a picture of a bill to split.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Split doesn't record audio. The camera asks for this, but bill photos never use the microphone.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
