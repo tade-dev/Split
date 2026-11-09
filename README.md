@@ -16,7 +16,9 @@ Split is the sister app to [Sorted](https://github.com/tade-dev/sorted). It reus
 
 - **Web:** https://split-b66c0.web.app. You are signed in straight away as **Kemi**, an organiser.
 - **API health:** https://split-api-k5ai.onrender.com/v1/health
-- **Demo video:** DEMO_VIDEO_TBD
+- **Demo video:** [Watch on YouTube](https://youtu.be/Aw2kfaxKK1Q)
+
+  [![Split demo video](https://img.youtube.com/vi/Aw2kfaxKK1Q/maxresdefault.jpg)](https://youtu.be/Aw2kfaxKK1Q)
 
 You can play every part on your own:
 
